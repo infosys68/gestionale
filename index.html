@@ -14,11 +14,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --bg-color: #fdfbf7; --text-color: #4a4a4a; --card-bg: rgba(255,255,255,0.85); --bottom-nav-bg: #ffffff; --border-color: #ddd; }
+        :root { --bg-color: #fdfbf7; --text-color: #4a4a4a; --card-bg: rgba(255,255,255,0.85); --border-color: #ddd; }
         
         /* TEMA SCURO AUTOMATICO PER PIXEL */
         @media (prefers-color-scheme: dark) {
-            :root { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --bottom-nav-bg: #1e1e1e; --border-color: #333; }
+            :root { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; }
             body { background-color: var(--bg-color); color: var(--text-color); }
             .table { color: #e0e0e0; }
             .table-light { background-color: #2c2c2c !important; color: #fff !important; }
@@ -32,7 +32,7 @@
             .bg-white { background-color: #1e1e1e !important; }
         }
 
-        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 80px; transition: background 0.3s; }
+        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 90px; transition: background 0.3s; }
         .hidden { display: none !important; }
         .entrata { color: #28a745 !important; font-weight: bold; }
         .uscita { color: #dc3545 !important; font-weight: bold; }
@@ -43,14 +43,8 @@
         .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
         .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
 
-        /* BOTTOM NAVIGATION BAR */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bottom-nav-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .nav-item-bottom { text-align: center; color: #888; text-decoration: none; font-size: 0.75rem; font-weight: bold; width: 25%; }
-        .nav-item-bottom.active { color: #0d6efd; }
-        .nav-item-bottom span { font-size: 1.4rem; display: block; margin-bottom: 2px; }
-
         /* FLOATING ACTION BUTTON (FAB) */
-        .fab-btn { position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: #0d6efd; color: white; border: none; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
+        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: #0d6efd; color: white; border: none; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
         .fab-btn:active { transform: scale(0.9); }
 
         /* HEADER & CARDS */
@@ -83,7 +77,7 @@
         <div class="top-header">
             <div class="dropdown">
                 <button class="btn btn-dark btn-sm dropdown-toggle fw-bold rounded-pill px-3 shadow-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.9rem;">
-                    📂 Sezioni
+                    🏛️ Sezioni
                 </button>
                 <ul class="dropdown-menu shadow-lg border-0 rounded-4 mt-2 p-2" aria-labelledby="dropdownMenuButton" style="min-width: 220px;">
                     <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-conto text-dark text-center" href="#" onclick="naviga('conto')">Gestione Conto</a></li>
@@ -94,6 +88,7 @@
             </div>
 
             <div class="d-flex gap-1 align-items-center">
+                <button onclick="naviga('home')" class="btn btn-success btn-sm rounded-pill px-2 fw-bold shadow-sm">🏠 Home</button>
                 <button onclick="naviga('backup')" class="btn btn-outline-secondary btn-sm rounded-pill px-2 fw-bold shadow-sm">⚙️ Dati</button>
                 <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm">🚪 Esci</button>
             </div>
@@ -123,7 +118,10 @@
             <div id="transazioni-section" class="section-container hidden">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 id="transazioni-title" class="fw-bold m-0">...</h3>
-                    <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Conferma</button>
+                    <div class="d-flex gap-2">
+                        <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Conferma</button>
+                        <button onclick="exportToPDF('transazioni')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                    </div>
                 </div>
 
                 <div class="table-container-white">
@@ -149,7 +147,11 @@
             </div>
 
             <div id="ricorrenti-section" class="section-container hidden">
-                <h3 class="mb-4 fw-bold">🔁 Ricorrenti</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">🔁 Ricorrenti</h3>
+                    <button onclick="exportToPDF('ricorrenti')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                </div>
+                
                 <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning mb-3 w-100 rounded-pill fw-bold">⚡ Inserisci tutti con 1 click</button>
                 <button onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4">+ Configura Nuovo</button>
                 
@@ -163,7 +165,10 @@
             </div>
 
             <div id="fondi-section" class="section-container hidden">
-                <h3 class="mb-4 fw-bold">💰 Gestione Fondi</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">💰 Gestione Fondi</h3>
+                    <button onclick="exportToPDF('fondi')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                </div>
                 
                 <div class="card p-3 shadow-sm border-0 rounded-4 mb-3" style="background: var(--card-bg);">
                     <h5 class="text-success fw-bold">Fondo Personale</h5>
@@ -208,13 +213,6 @@
         </div>
 
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
-
-        <div class="bottom-nav">
-            <a href="#" class="nav-item-bottom active" id="nav-home" onclick="naviga('home')"><span>🏠</span>Home</a>
-            <a href="#" class="nav-item-bottom" id="nav-conto" onclick="naviga('conto')"><span>🏦</span>Conto</a>
-            <a href="#" class="nav-item-bottom" id="nav-carta" onclick="naviga('carta')"><span>💳</span>Carta</a>
-            <a href="#" class="nav-item-bottom" id="nav-fondi" onclick="naviga('fondi')"><span>💰</span>Fondi</a>
-        </div>
 
     </div>
 
@@ -299,8 +297,8 @@
         function updateExitButton() {
             const btn = document.getElementById('btn-esci');
             if (btn) {
-                if (dataChanged) { btn.innerHTML = '📥 Esci e Salva'; btn.className = "btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark shadow-sm"; } 
-                else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold shadow-sm"; }
+                if (dataChanged) { btn.innerHTML = '📥 Salva'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
+                else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm"; }
             }
         }
 
@@ -346,9 +344,6 @@
         }
 
         function naviga(sezione) {
-            document.querySelectorAll('.nav-item-bottom').forEach(el => el.classList.remove('active'));
-            if(document.getElementById('nav-'+sezione)) document.getElementById('nav-'+sezione).classList.add('active');
-            
             ['dashboard-view', 'transazioni-section', 'ricorrenti-section', 'fondi-section', 'backup-section'].forEach(id => {
                 document.getElementById(id)?.classList.add('hidden');
             });
@@ -433,7 +428,6 @@
                     else { st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>'; az = `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> <button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; }
                 }
                 
-                /* TASTI MODIFICA ED ELIMINA RIPRISTINATI */
                 tbody.innerHTML += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}</td>
@@ -453,7 +447,6 @@
         function renderRicorrenti() { 
             const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
             [...db.ricorrenti].reverse().forEach(r => { 
-                /* TASTI MODIFICA ED ELIMINA RIPRISTINATI */
                 tbody.innerHTML += `<tr>
                     <td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td>
                     <td class="fw-bold">${r.causale}</td>
