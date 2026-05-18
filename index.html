@@ -24,7 +24,7 @@
             .table-light { background-color: #2c2c2c !important; color: #fff !important; }
             .form-control, .form-select { background-color: #2c2c2c; color: white; border-color: #444; }
             .form-control:focus, .form-select:focus { background-color: #333; color: white; }
-            .modal-content, .offcanvas { background-color: #1e1e1e; color: #e0e0e0; }
+            .modal-content { background-color: #1e1e1e; color: #e0e0e0; }
             .btn-close { filter: invert(1); }
             .note-container { background: #2c2c2c !important; border-left-color: #f57f17 !important; color: white;}
             #note-area { background-color: #1e1e1e; color: #e0e0e0; }
@@ -38,6 +38,11 @@
         .uscita { color: #dc3545 !important; font-weight: bold; }
         .riga-futura { opacity: 0.6; border-left: 3px solid #0d6efd; }
         
+        .bg-conto { background-color: #e3f2fd !important; border: 2px solid #a1c4fd; }
+        .bg-carta { background-color: #fff0f3 !important; border: 2px solid #ff9a9e; }
+        .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
+        .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
+
         /* BOTTOM NAVIGATION BAR */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bottom-nav-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .nav-item-bottom { text-align: center; color: #888; text-decoration: none; font-size: 0.75rem; font-weight: bold; width: 25%; }
@@ -49,7 +54,7 @@
         .fab-btn:active { transform: scale(0.9); }
 
         /* HEADER & CARDS */
-        .top-header { position: sticky; top: 0; background: var(--bg-color); z-index: 900; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .top-header { position: sticky; top: 0; background: var(--bg-color); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
         .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 25px 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
         .valore-saldo { font-size: 2.8rem; font-weight: 900; margin: 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
         .box-metrica { background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 10px; flex: 1; font-size: 0.8rem; margin: 0 5px; }
@@ -76,8 +81,22 @@
     <div id="app-screen" class="hidden">
         
         <div class="top-header">
-            <h5 class="m-0 fw-bold">🏛️ Tempio</h5>
-            <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold shadow-sm">🚪 Esci</button>
+            <div class="dropdown">
+                <button class="btn btn-dark btn-sm dropdown-toggle fw-bold rounded-pill px-3 shadow-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.9rem;">
+                    📂 Sezioni
+                </button>
+                <ul class="dropdown-menu shadow-lg border-0 rounded-4 mt-2 p-2" aria-labelledby="dropdownMenuButton" style="min-width: 220px;">
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-conto text-dark text-center" href="#" onclick="naviga('conto')">Gestione Conto</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-carta text-dark text-center" href="#" onclick="naviga('carta')">Carta di Credito</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-ricorrenti text-dark text-center" href="#" onclick="naviga('ricorrenti')">Pagamenti Ricorrenti</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-0 rounded-3 bg-fondi text-dark text-center" href="#" onclick="naviga('fondi')">Gestione Fondi</a></li>
+                </ul>
+            </div>
+
+            <div class="d-flex gap-1 align-items-center">
+                <button onclick="naviga('backup')" class="btn btn-outline-secondary btn-sm rounded-pill px-2 fw-bold shadow-sm">⚙️ Dati</button>
+                <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm">🚪 Esci</button>
+            </div>
         </div>
 
         <div class="container-fluid py-2">
@@ -129,43 +148,60 @@
                 </div>
             </div>
 
-            <div class="offcanvas offcanvas-bottom rounded-top-4 h-75" tabindex="-1" id="menuAltro">
-                <div class="offcanvas-header border-bottom">
-                    <h5 class="fw-bold mb-0">Gestione Avanzata</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            <div id="ricorrenti-section" class="section-container hidden">
+                <h3 class="mb-4 fw-bold">🔁 Ricorrenti</h3>
+                <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning mb-3 w-100 rounded-pill fw-bold">⚡ Inserisci tutti con 1 click</button>
+                <button onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4">+ Configura Nuovo</button>
+                
+                <div class="table-container-white">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle" style="font-size: 0.85rem;">
+                            <tbody id="ricorrenti-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="offcanvas-body">
-                    
-                    <div class="mb-5">
-                        <h5 class="fw-bold text-warning">🔁 Pagamenti Ricorrenti</h5>
-                        <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning w-100 rounded-pill fw-bold mb-3 shadow-sm">⚡ Inserisci Mese Corrente</button>
-                        <ul class="list-group list-group-flush mb-3" id="ricorrenti-list" style="font-size: 0.9rem;"></ul>
-                        <button onclick="apriModalRicorrente()" class="btn btn-outline-warning btn-sm w-100 rounded-pill fw-bold">+ Configura Nuovo</button>
-                    </div>
+            </div>
 
-                    <div class="mb-5">
-                        <h5 class="fw-bold text-info">💰 Gestione Fondi</h5>
-                        <div class="card bg-transparent border mb-3">
-                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                                <div><small class="d-block text-muted">Personale</small><h5 class="m-0 text-success fw-bold" id="tot-personale">€ 0.00</h5></div>
-                                <div class="d-flex gap-1"><button onclick="modificaFondiRapido('personale','aggiungi')" class="btn btn-sm btn-success">+</button><button onclick="modificaFondiRapido('personale','preleva')" class="btn btn-sm btn-danger">-</button></div>
-                            </div>
-                        </div>
-                        <div class="card bg-transparent border">
-                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                                <div><small class="d-block text-muted">Risparmi</small><h5 class="m-0 text-primary fw-bold" id="tot-risparmi">€ 0.00</h5></div>
-                                <div class="d-flex gap-1"><button onclick="modificaFondiRapido('risparmi','aggiungi')" class="btn btn-sm btn-primary">+</button><button onclick="modificaFondiRapido('risparmi','preleva')" class="btn btn-sm btn-danger">-</button></div>
-                            </div>
-                        </div>
+            <div id="fondi-section" class="section-container hidden">
+                <h3 class="mb-4 fw-bold">💰 Gestione Fondi</h3>
+                
+                <div class="card p-3 shadow-sm border-0 rounded-4 mb-3" style="background: var(--card-bg);">
+                    <h5 class="text-success fw-bold">Fondo Personale</h5>
+                    <h2 id="tot-personale-sec" class="text-success mb-3 fw-bold">€ 0.00</h2>
+                    <div class="input-group mb-2">
+                        <input type="number" id="fondo-personale-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi...">
+                        <button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success btn-sm px-3 fw-bold">V</button>
                     </div>
-
-                    <div>
-                        <h5 class="fw-bold text-secondary">⚙️ Archivio Dati</h5>
-                        <button onclick="esportaFileBackup()" class="btn btn-dark w-100 rounded-pill mb-3 fw-bold">💾 Scarica data.json</button>
-                        <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
-                        <button onclick="importaFileBackup()" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">📥 Carica Database</button>
+                    <div class="input-group">
+                        <input type="number" id="fondo-personale-preleva" class="form-control form-control-sm" placeholder="Preleva...">
+                        <button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger btn-sm px-3 fw-bold">X</button>
                     </div>
+                </div>
 
+                <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
+                    <h5 class="text-primary fw-bold">Fondo Risparmi</h5>
+                    <h2 id="tot-risparmi-sec" class="text-primary mb-3 fw-bold">€ 0.00</h2>
+                    <div class="input-group mb-2">
+                        <input type="number" id="fondo-risparmi-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi...">
+                        <button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary btn-sm px-3 fw-bold">V</button>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="fondo-risparmi-preleva" class="form-control form-control-sm" placeholder="Preleva...">
+                        <button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger btn-sm px-3 fw-bold">X</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="backup-section" class="section-container hidden">
+                <h3 class="mb-4 fw-bold">⚙️ Archivio Dati</h3>
+                <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
+                    <h5>💾 Esporta Database</h5>
+                    <p class="text-muted small">Scarica un file sul telefono per metterlo al sicuro.</p>
+                    <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
+                    <hr>
+                    <h6 class="mt-2">Ripristina da File Salvato</h6>
+                    <input type="file" id="file-import" class="form-control form-control-sm mb-3" accept=".json">
+                    <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
                 </div>
             </div>
 
@@ -177,7 +213,7 @@
             <a href="#" class="nav-item-bottom active" id="nav-home" onclick="naviga('home')"><span>🏠</span>Home</a>
             <a href="#" class="nav-item-bottom" id="nav-conto" onclick="naviga('conto')"><span>🏦</span>Conto</a>
             <a href="#" class="nav-item-bottom" id="nav-carta" onclick="naviga('carta')"><span>💳</span>Carta</a>
-            <a href="#" class="nav-item-bottom" data-bs-toggle="offcanvas" data-bs-target="#menuAltro"><span>⚙️</span>Altro</a>
+            <a href="#" class="nav-item-bottom" id="nav-fondi" onclick="naviga('fondi')"><span>💰</span>Fondi</a>
         </div>
 
     </div>
@@ -289,13 +325,13 @@
             document.getElementById('dash-carta-mese').innerText = `€ ${totaleCartaMese.toFixed(2)}`;
             document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
             document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
-            document.getElementById('tot-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
-            document.getElementById('tot-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
+            
+            if(document.getElementById('tot-personale-sec')) document.getElementById('tot-personale-sec').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
+            if(document.getElementById('tot-risparmi-sec')) document.getElementById('tot-risparmi-sec').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
 
             checkRicorrentiStatus();
         }
 
-        // LOGICA RICORRENTI SMART (Nasconde il tasto se già inseriti)
         function checkRicorrentiStatus() {
             const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
             let mancano = db.ricorrenti.some(r => {
@@ -309,13 +345,13 @@
             if (btn) btn.style.display = mancano ? 'block' : 'none';
         }
 
-        // GESTIONE NAVIGAZIONE BOTTOM NAV
         function naviga(sezione) {
             document.querySelectorAll('.nav-item-bottom').forEach(el => el.classList.remove('active'));
-            document.getElementById('nav-'+sezione)?.classList.add('active');
+            if(document.getElementById('nav-'+sezione)) document.getElementById('nav-'+sezione).classList.add('active');
             
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('transazioni-section').classList.add('hidden');
+            ['dashboard-view', 'transazioni-section', 'ricorrenti-section', 'fondi-section', 'backup-section'].forEach(id => {
+                document.getElementById(id)?.classList.add('hidden');
+            });
             document.getElementById('fab-add').classList.add('hidden');
 
             activeSection = sezione;
@@ -332,8 +368,14 @@
                 if (sezione === 'carta') btnTutti.classList.remove('hidden'); else btnTutti.classList.add('hidden');
                 
                 renderTable('corrente');
+            } else if (sezione === 'ricorrenti') {
+                document.getElementById('ricorrenti-section').classList.remove('hidden');
+                renderRicorrenti();
+            } else if (sezione === 'fondi') {
+                document.getElementById('fondi-section').classList.remove('hidden');
+            } else if (sezione === 'backup') {
+                document.getElementById('backup-section').classList.remove('hidden');
             }
-            renderRicorrentiOffcanvas();
         }
 
         function apriModalTransazione() {
@@ -374,7 +416,6 @@
             
             let dati = db.transazioni.filter(t => t.sezione === activeSection);
             
-            // RICERCA TESTUALE
             let searchVal = "";
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value);
@@ -391,11 +432,13 @@
                     if(t.confermato) st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
                     else { st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>'; az = `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> <button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; }
                 }
+                
+                /* TASTI MODIFICA ED ELIMINA RIPRISTINATI */
                 tbody.innerHTML += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}</td>
                     <td class="text-end ${t.tipo==='entrata'?'entrata':'uscita'}">${t.tipo==='entrata'?'+':'-'}€${t.importo.toFixed(2)}</td>
-                    <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button></td>
+                    <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
                 </tr>`;
             });
         }
@@ -403,48 +446,59 @@
         function conf(id) { db.transazioni.find(x=>x.id===id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x=>x.id===id); let d = new Date(x.data); d.setMonth(d.getMonth()+1); x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); }
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
-        function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); } }
+        function delT(id) { if(confirm('Eliminare operazione?')){ db.transazioni = db.transazioni.filter(x=>x.id!==id); saveData(); renderTable(activeViewMode); } }
+        
+        function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); alert("Tutte le operazioni della carta sono state confermate!"); } }
 
-        function renderRicorrentiOffcanvas() { 
-            const ul = document.getElementById('ricorrenti-list'); ul.innerHTML = ''; 
+        function renderRicorrenti() { 
+            const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
             [...db.ricorrenti].reverse().forEach(r => { 
-                ul.innerHTML += `<li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
-                    <div><span class="badge bg-secondary me-1">${r.mese==='attuale'?'C':'P'}</span> G.${r.giorno} - <strong>${r.causale}</strong></div>
-                    <div class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)} <button onclick="delR('${r.id}')" class="btn btn-sm text-danger p-0 ms-2 fs-5">✖</button></div>
-                </li>`; 
+                /* TASTI MODIFICA ED ELIMINA RIPRISTINATI */
+                tbody.innerHTML += `<tr>
+                    <td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td>
+                    <td class="fw-bold">${r.causale}</td>
+                    <td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td>
+                    <td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
+                </tr>`; 
             }); 
+            checkRicorrentiStatus();
         }
 
         function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         
         function addRicorrente(e) { 
             e.preventDefault(); 
-            const id = document.getElementById('ric-id').value; 
-            const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value);
+            const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value);
+            
+            if (!id) {
+                const esiste = db.ricorrenti.some(r => r.tipo === t && r.mese === m && r.giorno === g && r.causale.trim().toLowerCase() === c.trim().toLowerCase() && r.importo === imp);
+                if (esiste && !confirm("⚠️ Pagamento ricorrente già esistente. Salvare comunque?")) return;
+            }
+            
             const r = { id: id || Date.now().toString(), tipo: t, mese: m, giorno: g, causale: c, importo: imp }; 
             if(id) db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; else db.ricorrenti.push(r); 
-            saveData(); renderRicorrentiOffcanvas(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); 
+            saveData(); renderRicorrenti(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); 
         }
         
-        function delR(id) { if(confirm('Eliminare ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x=>x.id!==id); saveData(); renderRicorrentiOffcanvas(); } }
+        function delR(id) { if(confirm('Eliminare ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x=>x.id!==id); saveData(); renderRicorrenti(); } }
         
         function inserisciTuttiRicorrenti() { 
-            const oggi = new Date(); 
+            const oggi = new Date(); let ins = 0;
             db.ricorrenti.forEach(r => { 
                 let m = oggi.getMonth()+1; let y = oggi.getFullYear(); 
                 if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
                 const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; 
-                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { db.transazioni.push({ id: (Date.now() + Math.random()).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); } 
+                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { db.transazioni.push({ id: (Date.now() + Math.random()).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; } 
             }); 
-            saveData(); 
+            saveData(); alert("Operazione completata!"); renderRicorrenti();
         }
 
-        function modificaFondiRapido(t, a) {
-            let val = prompt(`Quanto vuoi ${a === 'aggiungi' ? 'versare' : 'prelevare'} dal Fondo ${t}?`, "0");
-            val = parseFloat(val); if (!val || isNaN(val)) return;
+        function modificaFondi(t, a) {
+            const val = parseFloat(document.getElementById(`fondo-${t}-${a}`).value); if(!val) return;
             if(a === 'aggiungi') db.fondi[t] += val; 
             else { if(val > db.fondi[t]) return alert("Fondi insufficienti!"); db.fondi[t] -= val; }
-            saveData();
+            document.getElementById(`fondo-${t}-${a}`).value = ''; saveData();
         }
 
         function esportaFileBackup() {
