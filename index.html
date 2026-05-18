@@ -234,6 +234,7 @@
     <script>
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
         let activeSection = ''; let activeViewMode = 'corrente';
+        let dataChanged = false; // INTERRUTTORE DI SICUREZZA PER VERIFICARE I CAMBIAMENTI
 
         function checkPassword() {
             const pwd = document.getElementById('password-input').value;
@@ -250,6 +251,7 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('note-area').value = db.note;
                 populateAnnoFiltri(); updateDashboard();
+                dataChanged = false; // Reset all'accesso pulito
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
@@ -257,14 +259,22 @@
             try { return JSON.parse(data); } catch(e) { return { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; }
         }
 
-        // FUNZIONE ESCI MODIFICATA CON AUTO-BACKUP PRIMA DEL LOGOUT
+        // LOGOUT INTELLIGENTE: SCARICA SOLO SE HAI MODIFICATO QUALCOSA
         function logout() { 
-            esportaFileBackup(); 
-            setTimeout(() => { location.reload(); }, 800); 
+            if (dataChanged) {
+                esportaFileBackup(); 
+                setTimeout(() => { location.reload(); }, 800); 
+            } else {
+                location.reload(); 
+            }
         }
 
+        // SALVATAGGIO NOTE OTTIMIZZATO PER EVITARE FALSI POSITIVI SE SOLO IN LETTURA
         function saveNotes() {
-            db.note = document.getElementById('note-area').value;
+            const currentNote = document.getElementById('note-area').value;
+            if (db.note === currentNote) return; // Esci silenziosamente se il testo è identico
+            
+            db.note = currentNote;
             document.getElementById('note-status').innerText = "Salvataggio...";
             saveData();
             document.getElementById('note-status').innerText = "Salvate ✅";
@@ -273,6 +283,7 @@
 
         function saveData() {
             localStorage.setItem('gestionale_db', JSON.stringify(db));
+            dataChanged = true; // Qualsiasi salvataggio attiva il semaforo del backup automatico
             updateDashboard();
         }
 
@@ -393,13 +404,12 @@
             document.getElementById(`fondo-${t}-${a}`).value = ''; saveData();
         }
 
-        // ESPORTAZIONE MIGLIORATA CON TIMESTAMP (DATA + ORA ED EVITA SOVRASCRITTURE)
         function esportaFileBackup() {
-            const ora = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+            const ora = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/-+/g, '').replace(/:/g, '');
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `database_gestionale_${ora}.json`);
+            downloadAnchor.setAttribute("download", `database_gestionale_${ora.substring(0,8)}_${ora.substring(9,13)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
