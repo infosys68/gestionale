@@ -16,23 +16,31 @@
     <style>
         :root { --bg-color: #fdfbf7; --text-color: #4a4a4a; --card-bg: rgba(255,255,255,0.85); --border-color: #ddd; }
         
-        /* TEMA SCURO AUTOMATICO PER PIXEL */
+        /* TEMA SCURO AUTOMATICO PER PIXEL - CON FIX TOTALI */
         @media (prefers-color-scheme: dark) {
             :root { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; }
             body { background-color: var(--bg-color); color: var(--text-color); }
-            .table { color: #e0e0e0; }
+            
+            .table { --bs-table-color: #e0e0e0; color: #e0e0e0 !important; }
+            .table td, .table th { color: #e0e0e0 !important; border-color: #333 !important; }
             .table-light { background-color: #2c2c2c !important; color: #fff !important; }
+            .table-light th { color: #fff !important; }
+            
             .form-control, .form-select { background-color: #2c2c2c; color: white; border-color: #444; }
             .form-control:focus, .form-select:focus { background-color: #333; color: white; }
             .modal-content { background-color: #1e1e1e; color: #e0e0e0; }
             .btn-close { filter: invert(1); }
+            
             .note-container { background: #2c2c2c !important; border-left-color: #f57f17 !important; color: white;}
             #note-area { background-color: #1e1e1e; color: #e0e0e0; }
             .text-dark { color: #e0e0e0 !important; }
+            .text-muted { color: #adb5bd !important; }
             .bg-white { background-color: #1e1e1e !important; }
+            
+            .bg-conto, .bg-carta, .bg-ricorrenti, .bg-fondi { background-color: transparent !important; border-color: #444 !important; }
         }
 
-        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 90px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 30px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
         .entrata { color: #28a745 !important; font-weight: bold; }
@@ -44,7 +52,6 @@
         .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
         .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
 
-        /* UI MIGLIORATA CSS EXTRA */
         .section-container { animation: fadeIn .25s ease; padding: 15px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -54,17 +61,10 @@
         .table td, .table th { border-color: var(--border-color); }
         .modal-content { background-color: var(--card-bg); }
 
-        /* BOTTOM NAVIGATION BAR */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
-        .nav-item-bottom { text-align: center; color: #888; text-decoration: none; font-size: 0.75rem; font-weight: bold; width: 33.3%; }
-        .nav-item-bottom.active { color: #0d6efd; }
-        .nav-item-bottom span { font-size: 1.4rem; display: block; margin-bottom: 2px; }
-
-        /* FLOATING ACTION BUTTON (FAB) MIGLIORATO */
-        .fab-btn { position: fixed; bottom: 85px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
+        /* FLOATING ACTION BUTTON (FAB) RIPOSIZIONATO IN BASSO SENZA NAV BAR */
+        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
         .fab-btn:active { transform: scale(.92); }
 
-        /* HEADER & CARDS */
         .top-header { position: sticky; top: 0; background: var(--bg-color); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
         .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 25px 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
         .valore-saldo { font-size: 2.8rem; font-weight: 900; margin: 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
@@ -230,12 +230,6 @@
 
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
 
-        <div class="bottom-nav">
-            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-conto" onclick="naviga('conto')"><span>🏦</span>Conto</a>
-            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-carta" onclick="naviga('carta')"><span>💳</span>Carta</a>
-            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-fondi" onclick="naviga('fondi')"><span>💰</span>Fondi</a>
-        </div>
-
     </div>
 
     <div class="modal fade" id="modalTransazione" tabindex="-1">
@@ -283,7 +277,7 @@
         </div>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050; margin-bottom: 70px;">
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
         <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body fw-bold" id="toast-message">Operazione completata</div>
@@ -297,18 +291,15 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false; 
 
-        // Motore calcolo orario locale
         function getLocalDateString() {
             const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
             return d.toISOString().split('T')[0];
         }
 
-        // Fix Formattazione Data Mobile (es. 18/05/26)
         function formatDate(s) {
             const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0].substring(2)}`;
         }
 
-        // Funzione visualizzazione Toast
         function showToast(message) {
             document.getElementById('toast-message').innerText = message;
             const toast = new bootstrap.Toast(document.getElementById('main-toast')); toast.show();
@@ -358,8 +349,6 @@
             const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
 
             db.transazioni.forEach(t => {
-                // IGNORA LE TRANSAZIONI DI TRASFERIMENTO FONDI NEL CALCOLO DEL SALDO REALE
-                // (perché i fondi vengono già sottratti matematicamente qui sotto)
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
                     if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
@@ -367,7 +356,6 @@
                 }
             });
 
-            // I fondi vengono sottratti dal totale per mostrare la disponibilità effettiva
             saldo -= (db.fondi.personale + db.fondi.risparmi);
             const mainCard = document.getElementById('main-card-saldo'); const alertContainer = document.getElementById('alert-container'); alertContainer.innerHTML = '';
 
@@ -398,16 +386,12 @@
         }
 
         function naviga(sezione) {
-            document.querySelectorAll('.nav-item-bottom').forEach(el => el.classList.remove('active'));
-            if(document.getElementById('nav-'+sezione)) document.getElementById('nav-'+sezione).classList.add('active');
-            
             ['dashboard-view', 'transazioni-section', 'ricorrenti-section', 'fondi-section', 'backup-section'].forEach(id => {
                 document.getElementById(id)?.classList.add('hidden');
             });
             document.getElementById('fab-add').classList.add('hidden');
 
             activeSection = sezione;
-            // Dinamismo del tasto + in base alla sezione
             document.getElementById('fab-add').innerHTML = sezione === 'carta' ? '💳' : '+';
 
             if (sezione === 'home') {
@@ -477,7 +461,8 @@
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); });
             }
             
-            dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || (Number(b.id) - Number(a.id))).forEach(t => {
+            // Fix ordinamento cronologico stringhe numeriche timestamp ID
+            dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || (b.id.localeCompare(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = '', st = '';
                 if(activeSection === 'carta') {
                     if(t.confermato) st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
@@ -544,14 +529,16 @@
                 let m = oggi.getMonth()+1; let y = oggi.getFullYear(); 
                 if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
                 const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; 
-                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { db.transazioni.push({ id: Date.now().toString() + Math.random().toString().substring(2,5), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; } 
+                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { 
+                    // ID sequenziali stabili basati su timestamp per conservare l'ordinamento inserimento inserito
+                    db.transazioni.push({ id: (Date.now() + ins).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; 
+                } 
             }); 
             saveData(); renderRicorrenti(); showToast("Ricorrenti inseriti con successo!");
         }
 
         function modificaFondi(tipoFondo, azione) {
-            const input = document.getElementById(`fondo-${tipoFondo}-${azione}`);
-            const valore = parseFloat(input.value);
+            const input = document.getElementById(`fondo-${tipoFondo}-${action = azione}`); const valore = parseFloat(input.value);
             if (!valore || valore <= 0) { alert("Importo non valido"); return; }
             
             const oggi = getLocalDateString();
@@ -580,6 +567,11 @@
         }
 
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; document.getElementById('filter-mese').value = (new Date().getMonth() + 1).toString().padStart(2,'0'); }
+        function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`, head = [['Data', 'Causale', 'Importo']], body = []; document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.addEventListener('beforeunload', function (e) { if (dataChanged) { e.preventDefault(); e.returnValue = 'Salva prima di uscire!'; } });
+        });
     </script>
 </body>
 </html>
