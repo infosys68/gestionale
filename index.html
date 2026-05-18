@@ -14,7 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        body { background-color: #fdfbf7; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #4a4a4a; }
+        body { background-color: #fdfbf7; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #4a4a4a; margin: 0; padding: 0; }
         .hidden { display: none !important; }
         .entrata { color: black !important; font-weight: bold; }
         .uscita { color: red !important; font-weight: bold; }
@@ -275,7 +275,6 @@
         function updateDashboard() {
             let saldo = 0; let totaleCartaMese = 0;
             const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
-            const oggiReset = new Date(aC, mC, oggi.getDate());
 
             db.transazioni.forEach(t => {
                 const dT = new Date(t.data);
@@ -286,7 +285,6 @@
             });
 
             saldo -= (db.fondi.personale + db.fondi.risparmi);
-            const saldoEl = document.getElementById('saldo-totale');
             const mainCard = document.getElementById('main-card-saldo');
             const alertContainer = document.getElementById('alert-container');
             alertContainer.innerHTML = '';
@@ -306,7 +304,7 @@
                 if (mancanoRicorrenti) alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div>';
             }
 
-            saldoEl.innerText = `€ ${saldo.toFixed(2)}`;
+            document.getElementById('saldo-totale').innerText = `€ ${saldo.toFixed(2)}`;
             document.getElementById('dash-carta-mese').innerText = `€ ${totaleCartaMese.toFixed(2)}`;
             document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
             document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
@@ -369,7 +367,20 @@
         function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; document.getElementById('form-ricorrenti').scrollIntoView({ behavior: 'smooth' }); }
         function addRicorrente(e) { e.preventDefault(); const id = document.getElementById('ric-id').value; const r = { id: id || Date.now().toString(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: document.getElementById('ric-giorno').value, causale: document.getElementById('ric-causale').value, importo: parseFloat(document.getElementById('ric-importo').value) }; if(id) db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; else db.ricorrenti.push(r); document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; saveData(); renderRicorrenti(); }
         function delR(id) { if(confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x=>x.id!==id); saveData(); renderRicorrenti(); } }
-        function inserisciTuttiRicorrenti() { const oggi = new Date(); let ins = 0; db.ricorrenti.forEach(r => { let m = oggi.getMonth()+1; let y = oggi.getFullYear(); if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { db.transazioni.push({ id: Date.now()+Math.random(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; } }); saveData(); alert("Operazione completata!"); }
+        
+        function inserisciTuttiRicorrenti() { 
+            const oggi = new Date(); let ins = 0; 
+            db.ricorrenti.forEach(r => { 
+                let m = oggi.getMonth()+1; let y = oggi.getFullYear(); 
+                if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
+                const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; 
+                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { 
+                    db.transazioni.push({ id: (Date.now() + Math.random()).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); 
+                    ins++; 
+                } 
+            }); 
+            saveData(); alert("Operazione completata!"); 
+        }
         
         function modificaFondi(t, a) {
             const val = parseFloat(document.getElementById(`fondo-${t}-${a}`).value); if(!val) return;
@@ -388,7 +399,7 @@
             downloadAnchor.remove();
         }
 
-        function importsFileBackup() { // Funzione corretta internamente per l'import locale
+        function importaFileBackup() {
             const fileInput = document.getElementById('file-import');
             if (!fileInput.files[0]) return alert("Seleziona prima un file .json!");
             const reader = new FileReader();
@@ -401,10 +412,9 @@
         }
 
         function formatDate(s) { const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
-        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; let pM = new Date().getMonth(); if(pM===0) pM=12; document.getElementById('filter-mese').value = pM.toString().padStart(2,'0'); }
+        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; let pM = new Date().getMonth() + 1; document.getElementById('filter-mese').value = pM.toString().padStart(2,'0'); }
         function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`, head = [['Data', 'Causale', 'Importo']], body = []; document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
 
-        // REGISTRAZIONE DEL SERVICE WORKER (CONTROLLATA PER GITHUB)
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('sw.js')
             .then(reg => console.log('Service Worker registrato con successo!', reg))
