@@ -43,8 +43,14 @@
         .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
         .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
 
+        /* BOTTOM NAVIGATION BAR (Aggiornata per 3 elementi) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+        .nav-item-bottom { text-align: center; color: #888; text-decoration: none; font-size: 0.75rem; font-weight: bold; width: 33.3%; }
+        .nav-item-bottom.active { color: #0d6efd; }
+        .nav-item-bottom span { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+
         /* FLOATING ACTION BUTTON (FAB) */
-        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: #0d6efd; color: white; border: none; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
+        .fab-btn { position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: #0d6efd; color: white; border: none; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
         .fab-btn:active { transform: scale(0.9); }
 
         /* HEADER & CARDS */
@@ -214,6 +220,12 @@
 
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
 
+        <div class="bottom-nav">
+            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-conto" onclick="naviga('conto')"><span>🏦</span>Conto</a>
+            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-carta" onclick="naviga('carta')"><span>💳</span>Carta</a>
+            <a href="#" class="nav-item-bottom" style="width: 33.3%;" id="nav-fondi" onclick="naviga('fondi')"><span>💰</span>Fondi</a>
+        </div>
+
     </div>
 
     <div class="modal fade" id="modalTransazione" tabindex="-1">
@@ -343,6 +355,9 @@
         }
 
         function naviga(sezione) {
+            document.querySelectorAll('.nav-item-bottom').forEach(el => el.classList.remove('active'));
+            if(document.getElementById('nav-'+sezione)) document.getElementById('nav-'+sezione).classList.add('active');
+            
             ['dashboard-view', 'transazioni-section', 'ricorrenti-section', 'fondi-section', 'backup-section'].forEach(id => {
                 document.getElementById(id)?.classList.add('hidden');
             });
@@ -412,8 +427,9 @@
             
             let searchVal = "";
             if (mode === 'archivio') {
-                const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value);
-                searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
+                const sA = parseInt(document.getElementById('filter-anno').value); 
+                const sM = parseInt(document.getElementById('filter-mese').value);
+                searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; });
                 if (searchVal) dati = dati.filter(t => t.causale.toLowerCase().includes(searchVal));
             } else {
@@ -437,9 +453,20 @@
         }
 
         function conf(id) { db.transazioni.find(x=>x.id===id).confermato = true; saveData(); renderTable(activeViewMode); }
-        function post(id) { const x = db.transazioni.find(x=>x.id===id); let d = new Date(x.data); d.setMonth(d.getMonth()+1); x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); }
-        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        
+        function post(id) { 
+            const x = db.transazioni.find(x=>x.id===id); 
+            let d = new Date(x.data); 
+            let giornoOriginale = d.getDate();
+            d.setMonth(d.getMonth() + 1); 
+            if (d.getDate() !== giornoOriginale) d.setDate(0); 
+            x.data = d.toISOString().split('T')[0]; 
+            x.confermato = false; 
+            saveData(); renderTable(activeViewMode); 
+        }
+
         function delT(id) { if(confirm('Eliminare operazione?')){ db.transazioni = db.transazioni.filter(x=>x.id!==id); saveData(); renderTable(activeViewMode); } }
+        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); alert("Tutte le operazioni della carta sono state confermate!"); } }
 
