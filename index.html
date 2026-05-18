@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionale Conto Corrente</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        body { background-color: #fdfbf7; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #4a4a4a; }
+        .hidden { display: none !important; }
+        .entrata { color: black !important; font-weight: bold; }
+        .uscita { color: red !important; font-weight: bold; }
+        
+        .riga-futura { background-color: #f1f3f5 !important; opacity: 0.7; border-left: 5px solid #0d6efd; }
+        .badge-futura { font-size: 0.7rem; background-color: #0d6efd; color: white; padding: 2px 6px; border-radius: 5px; margin-left: 5px; text-transform: uppercase; }
+
+        #login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(-45deg, #ffafbd, #ffc3a0, #a1c4fd, #c2e9fb); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .login-box { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 50px 40px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); max-width: 400px; width: 100%; }
+
+        .top-navbar { background: white; padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .btn-menu { border: none; color: #4a4a4a; font-weight: 700; border-radius: 50px; padding: 6px 14px; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s; }
+        .btn-menu:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-conto { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); } 
+        .btn-carta { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); } 
+        .btn-ricorrenti { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); } 
+        .btn-fondi { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+
+        .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 12px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; transition: background 0.5s ease; }
+        .saldo-negativo { background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%) !important; }
+        .valore-saldo { font-size: 3rem; font-weight: 900; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        
+        .box-metrica { background: rgba(0, 0, 0, 0.18); border-radius: 12px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.15); min-width: 130px; font-size: 0.85rem; }
+        .testo-carta { color: #ffd700 !important; font-weight: 800; font-size: 1.1rem; } 
+        .testo-fondi { color: #e0f7fa !important; font-weight: 700; font-size: 1.1rem; } 
+        
+        .alert-negativo { background-color: #fff; color: #ff0000; padding: 4px 12px; border-radius: 50px; font-weight: bold; animation: pulse 2s infinite; display: inline-block; margin-bottom: 8px; font-size: 0.85rem; }
+        .alert-ricorrenti { background-color: #ff9800; color: #fff; padding: 4px 12px; border-radius: 50px; font-weight: bold; display: inline-block; margin-bottom: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 0.85rem; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .bg-conto { background-color: #e3f2fd !important; border: 2px solid #a1c4fd; }
+        .bg-carta { background-color: #fff0f3 !important; border: 2px solid #ff9a9e; }
+        .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
+        .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
+        .bg-backup { background-color: #f1f3f5 !important; border: 2px solid #adb5bd; }
+
+        .section-container { border-radius: 25px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-top: 15px; }
+        .table-container-white { background: rgba(255,255,255,0.85); border-radius: 20px; padding: 20px; }
+        .btn-pdf { background-color: #4a4a4a; color: white; border: none; border-radius: 50px; padding: 8px 20px; font-weight: bold; }
+        
+        .note-container { background: #fff9c4; border-radius: 20px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); margin-bottom: 20px; border-left: 8px solid #fbc02d; }
+        .note-container h5 { color: #f57f17; font-size: 1rem; }
+        #note-area { border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; width: 100%; padding: 10px; font-size: 0.95rem; min-height: 90px; resize: none; background-color: rgba(255, 255, 255, 0.5); color: #5d4037; font-style: italic; }
+        #note-area:focus { outline: none; background-color: white; border-color: #fbc02d; }
+
+        @media (max-width: 576px) {
+            .valore-saldo { font-size: 2.2rem; }
+            .card-saldo { padding: 15px; border-radius: 15px; }
+            .box-metrica { min-width: 100px; padding: 6px 8px; font-size: 0.75rem; }
+            .testo-carta, .testo-fondi { font-size: 0.95rem; }
+            .top-navbar { padding: 8px; border-radius: 15px; }
+            .btn-menu { padding: 5px 10px; font-size: 0.8rem; }
+            .section-container { padding: 15px; border-radius: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <div style="font-size: 4rem;">🏛️</div>
+            <h2 class="mb-4 fw-bold">Gestionale</h2>
+            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center" placeholder="Password" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()" class="btn btn-dark btn-lg w-100 rounded-pill">Accedi Localmente</button>
+            <div id="login-error" class="text-danger mt-3 hidden fw-bold">❌ Password errata.</div>
+        </div>
+    </div>
+
+    <div id="app-screen" class="container py-3 hidden">
+        
+        <div class="top-navbar d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+                <button onclick="showDashboard()" class="btn btn-light btn-sm fw-bold rounded-pill px-3 me-2" style="border: 1px solid #ddd;">🏠 Home</button>
+                <button onclick="showSection('conto')" class="btn-menu btn-conto">Conto</button>
+                <button onclick="showSection('carta')" class="btn-menu btn-carta">Carta</button>
+                <button onclick="showSection('ricorrenti')" class="btn-menu btn-ricorrenti">Ricorrenti</button>
+                <button onclick="showSection('fondi')" class="btn-menu btn-fondi">Fondi</button>
+            </div>
+            <div class="d-flex gap-1">
+                <button onclick="showSection('backup')" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">⚙️ Dati</button>
+                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">🚪 Esci</button>
+            </div>
+        </div>
+
+        <div id="dashboard-view">
+            <div id="main-card-saldo" class="card-saldo">
+                <div id="alert-container"></div>
+                <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.85rem;">Saldo Reale Attuale</div>
+                <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
+                
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                    <div class="box-metrica flex-fill">
+                        <small class="d-block opacity-75">USCITE CARTA</small>
+                        <span id="dash-carta-mese" class="testo-carta">€ 0.00</span>
+                    </div>
+                    <div class="box-metrica flex-fill">
+                        <small class="d-block opacity-75">FONDO PERSONALE</small>
+                        <span id="dash-fondo-personale" class="testo-fondi">€ 0.00</span>
+                    </div>
+                    <div class="box-metrica flex-fill">
+                        <small class="d-block opacity-75">FONDO RISPARMI</small>
+                        <span id="dash-fondo-risparmi" class="testo-fondi">€ 0.00</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-2 text-start" style="background: rgba(0,0,0,0.08); border-radius: 12px; font-size: 0.8rem;">
+                    <div class="row g-1">
+                        <div class="col-sm-6"><strong>Rapporto:</strong> 71384942</div>
+                        <div class="col-sm-6 text-sm-end"><strong>Intestatario:</strong> MADDALONI MASSIMILIANO</div>
+                        <div class="col-12"><strong>IBAN:</strong> IT33E0305801604100571384942</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note-container">
+                <h5 class="fw-bold mb-2">📌 Note e Promemoria</h5>
+                <textarea id="note-area" placeholder="Scrivi qui i tuoi appunti..." onblur="saveNotes()"></textarea>
+                <div class="text-end mt-1">
+                    <small style="color: #f57f17; font-size: 0.8rem;" id="note-status">Le note si salvano automaticamente.</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="transazioni-section" class="section-container hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button onclick="showDashboard()" class="btn btn-light border rounded-pill shadow-sm">&larr; Home</button>
+                <button onclick="exportToPDF('transazioni')" class="btn-pdf">📄 Esporta PDF</button>
+            </div>
+            <h2 id="transazioni-title" class="mb-4 fw-bold">...</h2>
+            <form id="form-transazione" class="row g-3 mb-5 p-3 rounded-4 bg-white shadow-sm" onsubmit="addTransaction(event)">
+                <input type="hidden" id="trans-id">
+                <div class="col-md-2"><label class="form-label">Tipo</label><select id="trans-tipo" class="form-select"><option value="uscita">Uscita</option><option value="entrata">Entrata</option></select></div>
+                <div class="col-md-3"><label class="form-label">Data</label><input type="date" id="trans-data" class="form-control" required></div>
+                <div class="col-md-4"><label class="form-label">Causale</label><input type="text" id="trans-causale" class="form-control" required></div>
+                <div class="col-md-2"><label class="form-label">Importo</label><input type="number" id="trans-importo" class="form-control" step="0.01" required></div>
+                <div class="col-md-1 d-flex align-items-end"><button type="submit" class="btn btn-success w-100 fw-bold">OK</button></div>
+            </form>
+            <div class="table-container-white">
+                <ul class="nav nav-tabs mb-3" id="transazioni-tabs">
+                    <li class="nav-item"><a class="nav-link active" href="#" onclick="renderTable('corrente')">Mese Corrente</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="renderTable('archivio')">Archivio</a></li>
+                </ul>
+                <div id="archivio-filters" class="mb-3 hidden row">
+                    <div class="col-md-3"><select id="filter-anno" class="form-select" onchange="renderTable('archivio')"></select></div>
+                    <div class="col-md-3"><select id="filter-mese" class="form-select" onchange="renderTable('archivio')">
+                        <option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option><option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option><option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>
+                    </select></div>
+                </div>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light"><tr><th>Data / Stato</th><th>Causale</th><th>Importo</th><th>Azioni</th></tr></thead>
+                    <tbody id="transazioni-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="ricorrenti-section" class="section-container hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button onclick="showDashboard()" class="btn btn-light border rounded-pill">&larr; Home</button>
+                <button onclick="exportToPDF('ricorrenti')" class="btn-pdf">📄 Esporta PDF</button>
+            </div>
+            <h2 class="mb-4 fw-bold">Pagamenti Ricorrenti</h2>
+            <button onclick="inserisciTuttiRicorrenti()" class="btn btn-warning mb-4 rounded-pill px-4 fw-bold">⚡ Inserisci tutti con 1 click</button>
+            <form id="form-ricorrenti" class="row g-3 mb-5 p-3 rounded-4 bg-white shadow-sm" onsubmit="addRicorrente(event)">
+                <input type="hidden" id="ric-id">
+                <div class="col-md-2"><label class="form-label">Tipo</label><select id="ric-tipo" class="form-select"><option value="uscita">Uscita</option><option value="entrata">Entrata</option></select></div>
+                <div class="col-md-2"><label class="form-label">Competenza</label><select id="ric-mese" class="form-select"><option value="attuale">Mese Attuale</option><option value="prossimo">Mese Prossimo</option></select></div>
+                <div class="col-md-2"><label class="form-label">Giorno</label><input type="number" id="ric-giorno" class="form-control" min="1" max="31" required></div>
+                <div class="col-md-4"><label class="form-label">Causale</label><input type="text" id="ric-causale" class="form-control" required></div>
+                <div class="col-md-2"><label class="form-label">Importo</label><input type="number" id="ric-importo" class="form-control" step="0.01" required></div>
+                <div class="col-md-12 d-flex justify-content-end"><button type="submit" class="btn btn-success px-4 rounded-pill fw-bold">Salva</button></div>
+            </form>
+            <div class="table-container-white"><table class="table table-hover">
+                <thead class="table-light"><tr><th>Mese</th><th>Giorno</th><th>Causale</th><th>Importo</th><th>Azioni</th></tr></thead>
+                <tbody id="ricorrenti-tbody"></tbody>
+            </table></div>
+        </div>
+
+        <div id="fondi-section" class="section-container hidden">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button onclick="showDashboard()" class="btn btn-light border rounded-pill">&larr; Home</button>
+                <button onclick="exportToPDF('fondi')" class="btn-pdf">📄 Esporta PDF</button>
+            </div>
+            <h2 class="mb-4 fw-bold">Gestione Fondi</h2>
+            <div class="row g-4">
+                <div class="col-md-6"><div class="card p-4 shadow-sm border-0 rounded-4 bg-white">
+                    <h4 class="text-success fw-bold">Fondo Personale</h4><h2 id="tot-personale" class="text-success mb-4 fw-bold">€ 0.00</h2>
+                    <label class="form-label fw-bold">Aggiungi</label><div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control"><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success">V</button></div>
+                    <label class="form-label fw-bold text-danger">Preleva</label><div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control"><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger">X</button></div>
+                </div></div>
+                <div class="col-md-6"><div class="card p-4 shadow-sm border-0 rounded-4 bg-white">
+                    <h4 class="text-primary fw-bold">Fondo Risparmi</h4><h2 id="tot-risparmi" class="text-primary mb-4 fw-bold">€ 0.00</h2>
+                    <label class="form-label fw-bold">Aggiungi</label><div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control"><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary">V</button></div>
+                    <label class="form-label fw-bold text-danger">Preleva</label><div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control"><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger">X</button></div>
+                </div></div>
+            </div>
+        </div>
+
+        <div id="backup-section" class="section-container hidden">
+            <button onclick="showDashboard()" class="btn btn-light border mb-3 rounded-pill">&larr; Home</button>
+            <h2 class="mb-4 fw-bold">Gestione Archivio Dati</h2>
+            <div class="row g-4">
+                <div class="col-md-12"><div class="card p-4 shadow-sm border-0 rounded-4 bg-white">
+                    <h5>💾 Esporta Database in Locale</h5>
+                    <p class="text-muted small">Scarica un file sul telefono per metterlo al sicuro in caso di smarrimento del dispositivo.</p>
+                    <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
+                    <hr>
+                    <h6 class="mt-2">Ripristina da un File Salvato</h6>
+                    <input type="file" id="file-import" class="form-control mb-2" accept=".json">
+                    <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina Database</button>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LOGICA DI MEMORIZZAZIONE INTERNA (LOCAL STORAGE)
+        let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
+        let activeSection = ''; let activeViewMode = 'corrente';
+
+        function checkPassword() {
+            const pwd = document.getElementById('password-input').value;
+            if (pwd === '41079') {
+                // Legge direttamente dalla cassaforte locale del telefono
+                const localData = localStorage.getItem('gestionale_db');
+                if (localData) {
+                    db = jsonSafeParse(localData);
+                } else {
+                    // Database iniziale se vuoto
+                    db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
+                }
+                
+                if (db.note === undefined) db.note = "";
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('note-area').value = db.note;
+                populateAnnoFiltri(); updateDashboard();
+            } else { document.getElementById('login-error').classList.remove('hidden'); }
+        }
+
+        function jsonSafeParse(data) {
+            try { return json = JSON.parse(data); } catch(e) { return { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; }
+        }
+
+        function logout() { location.reload(); }
+
+        function saveNotes() {
+            db.note = document.getElementById('note-area').value;
+            document.getElementById('note-status').innerText = "Salvataggio...";
+            saveData();
+            document.getElementById('note-status').innerText = "Salvate ✅";
+            setTimeout(() => { document.getElementById('note-status').innerText = "Le note si salvano automaticamente."; }, 2000);
+        }
+
+        function saveData() {
+            // Scrive direttamente nella cassaforte locale del telefono
+            localStorage.setItem('gestionale_db', JSON.stringify(db));
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            let saldo = 0; let totaleCartaMese = 0;
+            const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
+            const oggiReset = new Date(aC, mC, oggi.getDate());
+
+            db.transazioni.forEach(t => {
+                const dT = new Date(t.data);
+                if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
+                if (t.sezione === 'carta' && t.tipo === 'uscita' && dT.getMonth() === mC && dT.getFullYear() === aC) {
+                    totaleCartaMese += t.importo;
+                }
+            });
+
+            saldo -= (db.fondi.personale + db.fondi.risparmi);
+            const saldoEl = document.getElementById('saldo-totale');
+            const mainCard = document.getElementById('main-card-saldo');
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.innerHTML = '';
+
+            if (saldo < 0) { mainCard.classList.add('saldo-negativo'); alertContainer.innerHTML += '<div class="alert-negativo">⚠️ ATTENZIONE: CONTO IN NEGATIVO</div><br>'; }
+            else { mainCard.classList.remove('saldo-negativo'); }
+
+            const ultimoGiornoMese = new Date(aC, mC + 1, 0).getDate();
+            if (ultimoGiornoMese - oggi.getDate() <= 5) {
+                const mancanoRicorrenti = db.ricorrenti.some(r => {
+                    if (r.mese === 'attuale') {
+                        const dS = `${aC}-${(mC+1).toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`;
+                        return !db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo);
+                    }
+                    return false;
+                });
+                if (mancanoRicorrenti) alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div>';
+            }
+
+            saldoEl.innerText = `€ ${saldo.toFixed(2)}`;
+            document.getElementById('dash-carta-mese').innerText = `€ ${totaleCartaMese.toFixed(2)}`;
+            document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
+            document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
+            document.getElementById('tot-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
+            document.getElementById('tot-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
+        }
+
+        function showDashboard() { 
+            ['transazioni','ricorrenti','fondi','backup'].forEach(s => document.getElementById(s+'-section').classList.add('hidden')); 
+            document.getElementById('dashboard-view').classList.remove('hidden'); 
+            updateDashboard(); 
+        }
+
+        function showSection(section) {
+            ['transazioni','ricorrenti','fondi','backup'].forEach(s => document.getElementById(s+'-section').classList.add('hidden'));
+            document.getElementById('dashboard-view').classList.add('hidden');
+            
+            const container = document.getElementById(section === 'conto' || section === 'carta' ? 'transazioni-section' : section + '-section');
+            container.className = "section-container bg-" + (section === 'backup' ? 'backup' : section);
+            container.classList.remove('hidden');
+            if (section === 'conto' || section === 'carta') { activeSection = section; document.getElementById('transazioni-title').innerText = section === 'conto' ? 'Gestione Conto' : 'Carta di Credito'; renderTable('corrente'); }
+            else if(section === 'ricorrenti') renderRicorrenti();
+        }
+
+        function addTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('trans-id').value;
+            const t = { id: id || Date.now().toString(), sezione: activeSection, tipo: document.getElementById('trans-tipo').value, data: document.getElementById('trans-data').value, causale: document.getElementById('trans-causale').value, importo: parseFloat(document.getElementById('trans-importo').value), confermato: false };
+            if(id) db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; else db.transazioni.push(t);
+            document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = '';
+            saveData(); renderTable(activeViewMode);
+        }
+
+        function renderTable(mode) {
+            activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = '';
+            const oggi = new Date(); const oggiReset = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate());
+            const mC = oggi.getMonth()+1; const aC = oggi.getFullYear();
+            document.querySelectorAll('#transazioni-tabs .nav-link')[0].classList.toggle('active', mode === 'corrente');
+            document.querySelectorAll('#transazioni-tabs .nav-link')[1].classList.toggle('active', mode === 'archivio');
+            document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
+            let dati = db.transazioni.filter(t => t.sezione === activeSection);
+            if(mode === 'corrente') dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); });
+            else { const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; }); }
+            dati.sort((a,b) => new Date(a.data) - new Date(b.data)).forEach(t => {
+                const isFutura = new Date(t.data) > oggiReset;
+                let az = '', st = '';
+                if(activeSection === 'carta') {
+                    if(t.confermato) st = '<br><span class="badge bg-success">CONFERMATO ✔️</span>';
+                    else { st = '<br><span class="badge bg-warning text-dark">DA VERIFICARE ❓</span>'; az = `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success">✔️</button> <button onclick="post('${t.id}')" class="btn btn-sm btn-warning">➡️</button> `; }
+                }
+                tbody.innerHTML += `<tr class="${isFutura ? 'riga-futura' : ''}"><td>${formatDate(t.data)}${isFutura ? '<span class="badge-futura">Previsione</span>' : ''}${st}</td><td>${t.causale}</td><td class="${t.tipo==='entrata'?'entrata':'uscita'}">${t.tipo==='entrata'?'+':'-'} €${t.importo.toFixed(2)}</td><td>${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-outline-primary">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-outline-danger">✖</button></td></tr>`;
+            });
+        }
+
+        function conf(id) { db.transazioni.find(x=>x.id===id).confermato = true; saveData(); renderTable(activeViewMode); }
+        function post(id) { const x = db.transazioni.find(x=>x.id===id); let d = new Date(x.data); d.setMonth(d.getMonth()+1); x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); }
+        function delT(id) { if(confirm('Eliminare?')){ db.transazioni = db.transazioni.filter(x=>x.id!==id); saveData(); renderTable(activeViewMode); } }
+        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; }
+        function renderRicorrenti() { const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; db.ricorrenti.forEach(r => { tbody.innerHTML += `<tr><td><span class="badge bg-info text-dark">${r.mese.toUpperCase()}</span></td><td>Giorno ${r.giorno}</td><td>${r.causale}</td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-outline-primary">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-outline-danger">✖</button></td></tr>`; }); }
+        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; document.getElementById('form-ricorrenti').scrollIntoView({ behavior: 'smooth' }); }
+        function addRicorrente(e) { e.preventDefault(); const id = document.getElementById('ric-id').value; const r = { id: id || Date.now().toString(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: document.getElementById('ric-giorno').value, causale: document.getElementById('ric-causale').value, importo: parseFloat(document.getElementById('ric-importo').value) }; if(id) db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; else db.ricorrenti.push(r); document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; saveData(); renderRicorrenti(); }
+        function delR(id) { if(confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x=>x.id!==id); saveData(); renderRicorrenti(); } }
+        function inserisciTuttiRicorrenti() { const oggi = new Date(); let ins = 0; db.ricorrenti.forEach(r => { let m = oggi.getMonth()+1; let y = oggi.getFullYear(); if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { db.transazioni.push({ id: Date.now()+Math.random(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; } }); saveData(); alert("Operazione completata!"); }
+        
+        function modificaFondi(t, a) {
+            const val = parseFloat(document.getElementById(`fondo-${t}-${a}`).value); if(!val) return;
+            if(a === 'aggiungi') db.fondi[t] += val; 
+            else { if(val > db.fondi[t]) return alert("Fondi insufficienti!"); db.fondi[t] -= val; }
+            document.getElementById(`fondo-${t}-${a}`).value = ''; saveData();
+        }
+
+        function esportaFileBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `database_gestionale_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importaFileBackup() {
+            const fileInput = document.getElementById('file-import');
+            if (!fileInput.files[0]) return alert("Seleziona prima un file .json!");
+            const reader = new FileReader();
+            reader.onload = e => {
+                db = jsonSafeParse(e.target.result);
+                saveData();
+                location.reload();
+            };
+            reader.readAsText(fileInput.files[0]);
+        }
+
+        function formatDate(s) { const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; let pM = new Date().getMonth(); if(pM===0) pM=12; document.getElementById('filter-mese').value = pM.toString().padStart(2,'0'); }
+        function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`, head = [['Data', 'Causale', 'Importo']], body = []; document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
+    </script>
+</body>
+</html>
