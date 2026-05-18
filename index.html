@@ -257,7 +257,11 @@
             try { return JSON.parse(data); } catch(e) { return { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; }
         }
 
-        function logout() { location.reload(); }
+        // FUNZIONE ESCI MODIFICATA CON AUTO-BACKUP PRIMA DEL LOGOUT
+        function logout() { 
+            esportaFileBackup(); 
+            setTimeout(() => { location.reload(); }, 800); 
+        }
 
         function saveNotes() {
             db.note = document.getElementById('note-area').value;
@@ -389,11 +393,13 @@
             document.getElementById(`fondo-${t}-${a}`).value = ''; saveData();
         }
 
+        // ESPORTAZIONE MIGLIORATA CON TIMESTAMP (DATA + ORA ED EVITA SOVRASCRITTURE)
         function esportaFileBackup() {
+            const ora = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `database_gestionale_${new Date().toISOString().split('T')[0]}.json`);
+            downloadAnchor.setAttribute("download", `database_gestionale_${ora}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
