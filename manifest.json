@@ -1,7 +1,7 @@
 {
   "name": "Gestionale Locale",
   "short_name": "Gestionale",
-  "start_url": "/index.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#fdfbf7",
   "theme_color": "#667eea",
