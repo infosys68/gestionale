@@ -331,13 +331,12 @@
         }
 
         function checkRicorrentiStatus() {
-            const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
+            const oggi = new Date();
             let mancano = db.ricorrenti.some(r => {
-                if (r.mese === 'attuale') {
-                    const dS = `${aC}-${(mC+1).toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`;
-                    return !db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo);
-                }
-                return false;
+                let m = oggi.getMonth() + 1; let y = oggi.getFullYear();
+                if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } }
+                const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`;
+                return !db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo);
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
             if (btn) btn.style.display = mancano ? 'block' : 'none';
