@@ -97,7 +97,7 @@
             </div>
             <div class="d-flex gap-1">
                 <button onclick="showSection('backup')" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">⚙️ Dati</button>
-                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">🚪 Esci</button>
+                <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">🚪 Esci</button>
             </div>
         </div>
 
@@ -234,7 +234,7 @@
     <script>
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
         let activeSection = ''; let activeViewMode = 'corrente';
-        let dataChanged = false; // INTERRUTTORE DI SICUREZZA PER VERIFICARE I CAMBIAMENTI
+        let dataChanged = false; 
 
         function checkPassword() {
             const pwd = document.getElementById('password-input').value;
@@ -251,7 +251,8 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('note-area').value = db.note;
                 populateAnnoFiltri(); updateDashboard();
-                dataChanged = false; // Reset all'accesso pulito
+                dataChanged = false; 
+                updateExitButton(); // Imposta lo stato iniziale del pulsante
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
@@ -259,20 +260,19 @@
             try { return JSON.parse(data); } catch(e) { return { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; }
         }
 
-        // LOGOUT INTELLIGENTE: SCARICA SOLO SE HAI MODIFICATO QUALCOSA
         function logout() { 
             if (dataChanged) {
                 esportaFileBackup(); 
+                dataChanged = false; // Disattiva la sentinella per evitare il popup nativo
                 setTimeout(() => { location.reload(); }, 800); 
             } else {
                 location.reload(); 
             }
         }
 
-        // SALVATAGGIO NOTE OTTIMIZZATO PER EVITARE FALSI POSITIVI SE SOLO IN LETTURA
         function saveNotes() {
             const currentNote = document.getElementById('note-area').value;
-            if (db.note === currentNote) return; // Esci silenziosamente se il testo è identico
+            if (db.note === currentNote) return; 
             
             db.note = currentNote;
             document.getElementById('note-status').innerText = "Salvataggio...";
@@ -283,8 +283,23 @@
 
         function saveData() {
             localStorage.setItem('gestionale_db', JSON.stringify(db));
-            dataChanged = true; // Qualsiasi salvataggio attiva il semaforo del backup automatico
+            dataChanged = true; 
+            updateExitButton(); // Cambia colore al pulsante "Esci"
             updateDashboard();
+        }
+
+        // NUOVA FUNZIONE: AGGIORNA VISIVAMENTE IL PULSANTE DI USCITA SE CI SONO MODIFICHE NON SCARICATE
+        function updateExitButton() {
+            const btn = document.getElementById('btn-esci');
+            if (btn) {
+                if (dataChanged) {
+                    btn.innerHTML = '📥 Esci e Salva';
+                    btn.className = "btn btn-warning btn-sm rounded-pill px-3 fw-bold";
+                } else {
+                    btn.innerHTML = '🚪 Esci';
+                    btn.className = "btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold";
+                }
+            }
         }
 
         function updateDashboard() {
@@ -308,7 +323,7 @@
             else { mainCard.classList.remove('saldo-negativo'); }
 
             const ultimoGiornoMese = new Date(aC, mC + 1, 0).getDate();
-            if (ultimoGiornoMese - oggi.getDate() <= 5) {
+            if (ultimoGiornoMese - ogg.getDate() <= 5) {
                 const mancanoRicorrenti = db.ricorrenti.some(r => {
                     if (r.mese === 'attuale') {
                         const dS = `${aC}-${(mC+1).toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`;
@@ -430,6 +445,14 @@
         function formatDate(s) { const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; let pM = new Date().getMonth() + 1; document.getElementById('filter-mese').value = pM.toString().padStart(2,'0'); }
         function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`, head = [['Data', 'Causale', 'Importo']], body = []; document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
+
+        // BLOCCO DI SICUREZZA NATIIVO: CHIEDE CONFERMA SE PROVI A CHIUDERE IL SITO SENZA PREMERE "ESCI"
+        window.addEventListener('beforeunload', function (e) {
+            if (dataChanged) {
+                e.preventDefault();
+                e.returnValue = 'Hai modifiche non scaricate. Usa il pulsante "Esci e Salva" per generare il file di backup.';
+            }
+        });
 
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('sw.js')
