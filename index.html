@@ -61,7 +61,6 @@
         .table td, .table th { border-color: var(--border-color); }
         .modal-content { background-color: var(--card-bg); }
 
-        /* FLOATING ACTION BUTTON (FAB) RIPOSIZIONATO IN BASSO SENZA NAV BAR */
         .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
         .fab-btn:active { transform: scale(.92); }
 
@@ -135,7 +134,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 id="transazioni-title" class="fw-bold m-0">...</h3>
                     <div class="d-flex gap-2">
-                        <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Conferma</button>
+                        <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Confirm</button>
                         <button onclick="exportToPDF('transazioni')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
                     </div>
                 </div>
@@ -297,7 +296,7 @@
         }
 
         function formatDate(s) {
-            const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0].substring(2)}`;
+            const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0]}`;
         }
 
         function showToast(message) {
@@ -461,7 +460,6 @@
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); });
             }
             
-            // Fix ordinamento cronologico stringhe numeriche timestamp ID
             dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || (b.id.localeCompare(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = '', st = '';
                 if(activeSection === 'carta') {
@@ -530,7 +528,6 @@
                 if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
                 const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; 
                 if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { 
-                    // ID sequenziali stabili basati su timestamp per conservare l'ordinamento inserimento inserito
                     db.transazioni.push({ id: (Date.now() + ins).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; 
                 } 
             }); 
@@ -549,7 +546,7 @@
             } else {
                 if (valore > db.fondi[tipoFondo]) { alert("Fondi insufficienti!"); return; }
                 db.fondi[tipoFondo] -= valore;
-                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: Date.now().toString(), SECTION: 'conto', sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
             }
             
             input.value = ''; saveData(); showToast("Fondi aggiornati");
