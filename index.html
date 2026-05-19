@@ -28,7 +28,7 @@
             
             .form-control, .form-select { background-color: #2c2c2c; color: white; border-color: #444; }
             .form-control:focus, .form-select:focus { background-color: #333; color: white; }
-            .modal-content { background-color: #1e1e1e; color: #e0e0e0; }
+            .modal-content { background-color: #1e1e1e; color: #e0e0e0; border: 1px solid #444; }
             .btn-close { filter: invert(1); }
             
             .note-container { background: #2c2c2c !important; border-left-color: #f57f17 !important; color: white;}
@@ -78,11 +78,11 @@
 <body>
 
     <div id="login-screen">
-        <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); text-align: center; width: 90%; max-width: 350px;">
+        <div class="p-4 rounded-4 shadow-lg" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(15px); text-align: center; width: 90%; max-width: 350px;">
             <div style="font-size: 4rem;">📱</div>
             <h2 class="mb-4 fw-bold text-white">Gestionale App</h2>
-            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center" placeholder="PIN" inputmode="numeric" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
-            <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold">Sblocca</button>
+            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center fw-bold" placeholder="PIN" inputmode="numeric" style="letter-spacing: 5px; background-color: #2a2a2a !important; color: #ffffff !important; border: 2px solid #555 !important; box-shadow: none;" onfocus="this.style.borderColor='#0d6efd'" onblur="this.style.borderColor='#555'" onkeydown="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
             <div id="login-error" class="text-danger mt-3 hidden fw-bold">❌ PIN errato.</div>
         </div>
     </div>
@@ -116,6 +116,8 @@
                     <div id="alert-container"></div>
                     <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Attuale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
+                    <div class="mt-1 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 1384 942</div>
+                    
                     <div class="d-flex justify-content-between mt-3">
                         <div class="box-metrica"><small class="d-block opacity-75">CARTA</small><span id="dash-carta-mese" class="fw-bold text-warning">€ 0.00</span></div>
                         <div class="box-metrica"><small class="d-block opacity-75">PERSONALE</small><span id="dash-fondo-personale" class="fw-bold text-info">€ 0.00</span></div>
@@ -168,7 +170,7 @@
                 </div>
                 
                 <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning mb-3 w-100 rounded-pill fw-bold">⚡ Inserisci tutti con 1 click</button>
-                <button onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4">+ Configura Nuovo</button>
+                <button id="btn-nuovo-ric" onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4">+ Configura Nuovo</button>
                 
                 <div class="table-container-white">
                     <div class="table-responsive">
@@ -471,15 +473,13 @@
 
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
 
-            // FIX: Delta Fondi con segni matematici esatti
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
                 const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
+                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo;
+                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
                 
-                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo; 
-                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] -= vecchiaTransazione.importo;  
-                
-                if (tipoInput === 'entrata') db.fondi[tipoFondo] -= importoInput; 
-                if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;  
+                if (tipoInput === 'entrata') db.fondi[tipoFondo] -= importoInput;
+                if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;
             }
 
             const t = { 
@@ -538,11 +538,7 @@
 
         function conf(id) { db.transazioni.find(x=>x.id===id).confermato = true; saveData(); renderTable(activeViewMode); }
         
-        function post(id) { 
-            const x = db.transazioni.find(x=>x.id===id); let d = new Date(x.data); let giornoOriginale = d.getDate();
-            d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); 
-            x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata");
-        }
+        function post(id) { const x = db.transazioni.find(x=>x.id===id); let d = new Date(x.data); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
 
         function delT(id) { 
             if(confirm('Eliminare operazione?')) { 
@@ -561,156 +557,20 @@
         }
         
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
-        
-        // FIX: Rimossa la riga corrotta 'function原型confermaTutteCarte()'
         function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
 
-        function renderRicorrenti() { 
-            const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
-            [...db.ricorrenti].reverse().forEach(r => { 
-                tbody.innerHTML += `<tr>
-                    <td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td>
-                    <td class="fw-bold">${r.causale}</td>
-                    <td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td>
-                    <td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
-                </tr>`; 
-            }); 
-            checkRicorrentiStatus();
-        }
-
+        function renderRicorrenti() { const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; [...db.ricorrenti].reverse().forEach(r => { tbody.innerHTML += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); checkRicorrentiStatus(); }
         function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
-        
-        function addRicorrente(e) { 
-            e.preventDefault(); 
-            const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value);
-            
-            if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; }
-
-            const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
-            if(id) {
-                const vecchia = db.ricorrenti.find(x => x.id === id);
-                r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : "";
-                db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; 
-            } else {
-                db.ricorrenti.push(r); 
-            }
-            saveData(); renderRicorrenti(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); showToast("Ricorrente salvato");
-        }
-        
+        function addRicorrente(e) { e.preventDefault(); const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; } const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; if(id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } else { db.ricorrenti.push(r); } saveData(); renderRicorrenti(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); showToast("Ricorrente salvato"); }
         function delR(id) { if(confirm('Eliminare ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x=>x.id!==id); saveData(); renderRicorrenti(); showToast("Eliminato"); } }
-        
-        function inserisciTuttiRicorrenti() { 
-            const oggi = new Date(); let ins = 0;
-            const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
-            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`;
-
-            db.ricorrenti.forEach(r => { 
-                let m = mC; let y = aC; 
-                if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
-                
-                let targetGiorno = r.giorno;
-                let lastDayOfMonth = new Date(y, m, 0).getDate();
-                if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
-                const dS = `${y}-${m.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`; 
-                
-                if (r.ultima_esecuzione !== meseCorrenteFirma) { 
-                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); 
-                    r.ultima_esecuzione = meseCorrenteFirma;
-                    ins++; 
-                } 
-            }); 
-            if(ins > 0) { saveData(); renderTable(activeViewMode); showToast(`${ins} Ricorrenti inseriti!`); }
-            else { showToast("Tutti i ricorrenti sono già stati scalati per questo mese."); }
-        }
-
-        function modificaFondi(tipoFondo, azione) {
-            const input = document.getElementById(`fondo-${tipoFondo}-${azione}`); const valore = parseFloat(input.value);
-            if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; }
-            
-            const oggi = getLocalDateString();
-            
-            // FIX: Cambiato il vecchio 'action' errato con 'azione'
-            if (azione === 'aggiungi') {
-                db.fondi[tipoFondo] += valore;
-                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
-            } else {
-                if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; }
-                db.fondi[tipoFondo] -= valore;
-                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
-            }
-            
-            input.value = ''; saveData(); showToast("Fondi aggiornati");
-        }
-
-        function importaFileBackup() {
-            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!");
-            const r = new FileReader(); r.onload = e => { 
-                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(()=> location.reload(), 1000); } 
-                catch(err) { showToast("⚠️ File JSON non valido"); }
-            }; r.readAsText(f.files[0]);
-        }
-
-        function esportaFileBackup() {
-            const now = new Date();
-            const yy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = `${yy}${mm}${dd}_${hh}${min}${ss}`;
-
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-            const a = document.createElement('a'); a.href = dataStr; 
-            a.download = `backup_gestionale_${timestamp}.json`; 
-            document.body.appendChild(a); a.click(); a.remove(); 
-            showToast("Sincronizzazione Cloud inviata 🚀");
-        }
-
-        function exportToPDF(type) { 
-            const { jsPDF } = window.jspdf; 
-            const doc = new jsPDF(); 
-            let title = `REPORT ${type.toUpperCase()}`;
-            let head = [['Data', 'Causale', 'Importo']]; 
-            let body = []; 
-
-            if (type === 'fondi') {
-                head = [['Nome Fondo', 'Disponibilita Attuale']];
-                body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]);
-                body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]);
-            } else if (type === 'ricorrenti') {
-                head = [['Competenza e Giorno', 'Causale', 'Importo']];
-                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
-                    const cols = row.querySelectorAll('td'); 
-                    if (cols.length >= 4) {
-                        let tempDate = cols[0].innerText.replace(/\n/g, ' ');
-                        body.push([tempDate, cols[1].innerText, cols[2].innerText]); 
-                    }
-                });
-            } else {
-                document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
-                    const cols = row.querySelectorAll('td'); 
-                    if (cols.length >= 3) {
-                        body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); 
-                    }
-                }); 
-            }
-
-            doc.text(title, 14, 20); 
-            doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); 
-            doc.save(`Report_${type}.pdf`); 
-        }
-
+        function inserisciTuttiRicorrenti() { const oggi = new Date(); let ins = 0; const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`; db.ricorrenti.forEach(r => { let m = mC; let y = aC; if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; const dS = `${y}-${m.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`; if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } }); if(ins > 0) { saveData(); renderTable(activeViewMode); showToast(`${ins} Ricorrenti inseriti!`); } else { showToast("Tutti i ricorrenti sono già stati scalati per questo mese."); } }
+        function modificaFondi(tipoFondo, azione) { const input = document.getElementById(`fondo-${tipoFondo}-${azione}`); const valore = parseFloat(input.value); if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } input.value = ''; saveData(); showToast("Fondi aggiornati"); }
+        function esportaFileBackup() { const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = `${yy}${mm}${dd}_${hh}${min}${ss}`; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = `backup_gestionale_${timestamp}.json`; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); }
+        function importaFileBackup() { const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!"); const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(()=> location.reload(), 1000); } catch(err) { showToast("⚠️ File JSON non valido"); } }; r.readAsText(f.files[0]); }
+        function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`; let head = [['Data', 'Causale', 'Importo']]; let body = []; if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } else if (type === 'ricorrenti') { head = [['Competenza e Giorno', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText, cols[2].innerText]); } }); } else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); } }); } doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2,'0'); }
-        
-        window.addEventListener('beforeunload', function (e) { 
-            if (dataChanged) { 
-                e.preventDefault(); 
-                e.returnValue = 'Hai modifiche non scaricate. Usa il tasto "Salva su Drive" per sincronizzarle.'; 
-            } 
-        });
-        
+        window.addEventListener('beforeunload', function (e) { if (dataChanged) { e.preventDefault(); e.returnValue = 'Hai modifiche non scaricate. Usa il tasto "Salva su Drive" per sincronizzarle.'; } });
     </script>
 </body>
 </html>
