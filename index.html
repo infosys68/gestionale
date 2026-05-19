@@ -328,9 +328,8 @@
 
             db.transazioni.forEach(t => { 
                 if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
-                if (!t.sezione) t.sezione = 'conto'; // CORREZIONE 2: Impedisce transazioni fantasma
+                if (!t.sezione) t.sezione = 'conto';
                 if (t.isFondoTransfer && !t.targetFondo) {
-                    // Recupero storico vecchio sistema basato su testo
                     t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
                 }
             });
@@ -411,12 +410,20 @@
         function checkRicorrentiStatus() {
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
             const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`;
+            const alertContainer = document.getElementById('alert-container');
 
             let mancano = db.ricorrenti.some(r => {
                 return r.ultima_esecuzione !== meseCorrenteFirma;
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
             if (btn) btn.style.display = mancano ? 'block' : 'none';
+
+            const ultimoGiornoMese = new Date(aC, mC, 0).getDate();
+            if (ultimoGiornoMese - oggi.getDate() <= 5 && mancano && alertContainer) {
+                 if(!alertContainer.innerHTML.includes('RICORDA:')) {
+                     alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div>';
+                 }
+            }
         }
 
         function naviga(sezione) {
@@ -464,14 +471,15 @@
 
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
 
-            // CORREZIONE 1: Delta Fondi basato su proprietà blindata 'targetFondo'
+            // CORREZIONE STABILE BILANCIAMENTO DELTA FONDI
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
                 const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
-                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
-                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] += vecchiaTransazione.importo;
                 
-                if (tipoInput === 'entrata') db.fondi[tipoFondo] += importoInput;
-                if (tipoInput === 'uscita') db.fondi[tipoFondo] -= importoInput;
+                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo; 
+                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] -= vecchiaTransazione.importo;  
+                
+                if (tipoInput === 'entrata') db.fondi[tipoFondo] -= importoInput; 
+                if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;  
             }
 
             const t = { 
@@ -539,7 +547,6 @@
         function delT(id) { 
             if(confirm('Eliminare operazione?')) { 
                 const t = db.transazioni.find(x => x.id === id);
-                // CORREZIONE 1: Eliminazione basata su proprietà blindata 'targetFondo'
                 if (t && t.isFondoTransfer) {
                     const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                     if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo;
@@ -624,7 +631,6 @@
             
             if (azione === 'aggiungi') {
                 db.fondi[tipoFondo] += valore;
-                // CORREZIONE 1: Aggiunta esplicita della proprietà immutabile 'targetFondo'
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; }
