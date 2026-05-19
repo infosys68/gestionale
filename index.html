@@ -435,7 +435,7 @@
                 return r.ultima_esecuzione !== meseCorrenteFirma;
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
-            if (btn) btn.style.display = 'block'; else btn.style.display = 'none';
+            if (btn) btn.style.display = mancano ? 'block' : 'none';
 
             const ultimoGiornoMese = new Date(aC, mC, 0).getDate();
             if (ultimoGiornoMese - oggi.getDate() <= 5 && mancano && alertContainer) {
@@ -490,7 +490,6 @@
 
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
 
-            // VACCINO INTEGRATO: Correzione bug con riferimenti variabili corretti
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
                 const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                 if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo;
