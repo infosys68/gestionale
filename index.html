@@ -471,7 +471,7 @@
 
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
 
-            // CORREZIONE STABILE BILANCIAMENTO DELTA FONDI
+            // FIX: Delta Fondi con segni matematici esatti
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
                 const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                 
@@ -562,6 +562,7 @@
         
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
+        // FIX: Rimossa la riga corrotta 'function原型confermaTutteCarte()'
         function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
 
         function renderRicorrenti() { 
@@ -629,6 +630,7 @@
             
             const oggi = getLocalDateString();
             
+            // FIX: Cambiato il vecchio 'action' errato con 'azione'
             if (azione === 'aggiungi') {
                 db.fondi[tipoFondo] += valore;
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
@@ -639,6 +641,14 @@
             }
             
             input.value = ''; saveData(); showToast("Fondi aggiornati");
+        }
+
+        function importaFileBackup() {
+            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!");
+            const r = new FileReader(); r.onload = e => { 
+                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(()=> location.reload(), 1000); } 
+                catch(err) { showToast("⚠️ File JSON non valido"); }
+            }; r.readAsText(f.files[0]);
         }
 
         function esportaFileBackup() {
@@ -656,14 +666,6 @@
             a.download = `backup_gestionale_${timestamp}.json`; 
             document.body.appendChild(a); a.click(); a.remove(); 
             showToast("Sincronizzazione Cloud inviata 🚀");
-        }
-
-        function importaFileBackup() {
-            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!");
-            const r = new FileReader(); r.onload = e => { 
-                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(()=> location.reload(), 1000); } 
-                catch(err) { showToast("⚠️ File JSON non valido"); }
-            }; r.readAsText(f.files[0]);
         }
 
         function exportToPDF(type) { 
