@@ -50,7 +50,6 @@
                 color: #fff !important; 
             }
             
-            /* RIGIDO CONTRASTO PER PIN, INPUT E NOTE CONTRO IL NERO SU NERO */
             .form-control, .form-select, #note-area { 
                 background-color: #242424 !important; 
                 color: #ffffff !important; 
@@ -63,7 +62,6 @@
                 outline: none; 
             }
             
-            /* VISIBILITÀ DELLE ETICHETTE FLUTTUANTI */
             .form-floating > label { 
                 color: #b0b0b0 !important; 
             }
@@ -201,6 +199,7 @@
                     <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Attuale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
                     <div class="mt-1 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 1384 942</div>
+                    <div id="last-update-reg" class="mt-1 opacity-50 small" style="font-size: 0.75rem; font-style: italic;">Dati aggiornati al: --/-- ore --:--</div>
                     
                     <div class="d-flex justify-content-between mt-3">
                         <div class="box-metrica"><small class="d-block opacity-75">CARTA</small><span id="dash-carta-mese" class="fw-bold text-warning">€ 0.00</span></div>
@@ -220,7 +219,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 id="transazioni-title" class="fw-bold m-0">...</h3>
                     <div class="d-flex gap-2">
-                        <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Conferma</button>
+                        <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Confirm</button>
                         <button onclick="exportToPDF('transazioni')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
                     </div>
                 </div>
@@ -376,7 +375,7 @@
     </div>
 
     <script>
-        let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
+        let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "" };
         let activeSection = 'home'; 
         let activeViewMode = 'corrente';
         let dataChanged = false; 
@@ -389,6 +388,15 @@
             const d = new Date(); 
             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
             return d.toISOString().split('T')[0];
+        }
+
+        function getTimestampString() {
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            return dd + "/" + mm + " ore " + hh + ":" + min;
         }
 
         function formatDate(s) {
@@ -409,10 +417,11 @@
         }
 
         function sanitizeDatabase() {
-            if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
+            if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "" };
             if (!Array.isArray(db.transazioni)) db.transazioni = [];
             if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
             if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
+            if (db.last_update === undefined) db.last_update = "";
             
             db.fondi.personale = Number(db.fondi.personale) || 0;
             db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
@@ -437,7 +446,7 @@
                     try { 
                         db = JSON.parse(localData); 
                     } catch(e) { 
-                        db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; 
+                        db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "" }; 
                     }
                 }
                 
@@ -456,6 +465,7 @@
 
         function saveData() { 
             sanitizeDatabase();
+            db.last_update = getTimestampString();
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
             dataChanged = true; 
             updateExitButton(); 
@@ -539,6 +549,12 @@
             }
             if (document.getElementById('tot-risparmi-sec')) {
                 document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2);
+            }
+
+            if (db.last_update) {
+                document.getElementById('last-update-reg').innerText = "Dati aggiornati al: " + db.last_update;
+            } else {
+                document.getElementById('last-update-reg').innerText = "Dati aggiornati al: --/-- ore --:--";
             }
 
             checkRicorrentiStatus();
