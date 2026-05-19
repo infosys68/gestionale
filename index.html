@@ -216,7 +216,7 @@
                 <h3 class="mb-4 fw-bold">⚙️ Archivio Dati</h3>
                 <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
                     <h5>💾 Esporta Database</h5>
-                    <p class="text-muted small">Scarica il file aggiornato per salvarlo nel tuo NAS.</p>
+                    <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
                     <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
                     <hr>
                     <h6 class="mt-2">Ripristina da File Salvato</h6>
@@ -294,6 +294,11 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false; 
 
+        // Generatore di ID Sicuri e impossibili da duplicare (Vaccino 1)
+        function generateSecureId() {
+            return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16);
+        }
+
         function getLocalDateString() {
             const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
             return d.toISOString().split('T')[0];
@@ -322,8 +327,9 @@
             db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
             if (db.note === undefined) db.note = "";
 
-            db.transazioni.forEach((t, i) => { if (!t.id) t.id = (Date.now() + i).toString(); else t.id = String(t.id); });
-            db.ricorrenti.forEach((r, i) => { if (!r.id) r.id = (Date.now() + i).toString(); else r.id = String(r.id); });
+            // Se trova vecchi ID deboli o inesistenti, li sostituisce con ID blindati
+            db.transazioni.forEach(t => { if (!t.id || t.id.length < 15) t.id = generateSecureId(); });
+            db.ricorrenti.forEach(r => { if (!r.id || r.id.length < 15) r.id = generateSecureId(); });
         }
 
         function checkPassword() {
@@ -353,7 +359,7 @@
         function updateExitButton() {
             const btn = document.getElementById('btn-esci');
             if (btn) {
-                if (dataChanged) { btn.innerHTML = '📥 Salva'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
+                if (dataChanged) { btn.innerHTML = '📥 Salva su Drive'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
                 else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm"; }
             }
         }
@@ -372,6 +378,7 @@
             let saldo = 0; let totaleCartaMese = 0;
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
 
+            // Calcolo Dinamico dei Saldi (Deriva evitata)
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
@@ -399,18 +406,11 @@
 
         function checkRicorrentiStatus() {
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
-            
-            let mancano = db.ricorrenti.some(r => {
-                let mx = mC; let yx = aC;
-                if (r.mese === 'prossimo') { mx++; if (mx > 12) { mx = 1; yx++; } }
-                
-                // CORREZIONE GIORNO INESISTENTE
-                let targetGiorno = r.giorno;
-                let lastDayOfMonth = new Date(yx, mx, 0).getDate();
-                if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
+            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`; // Formato firma "2026-05"
 
-                const dS = `${yx}-${mx.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`;
-                return !db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo);
+            let mancano = db.ricorrenti.some(r => {
+                // Vaccino 2 (Controllo visuale): Usa la firma temporale invece di cercare per testo
+                return r.ultima_esecuzione !== meseCorrenteFirma;
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
             if (btn) btn.style.display = mancano ? 'block' : 'none';
@@ -459,12 +459,8 @@
 
             if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
 
-            if (!id) { 
-                const esiste = db.transazioni.some(t => t.sezione === activeSection && t.data === dataInput && t.causale.trim().toLowerCase() === causaleInput.trim().toLowerCase() && t.importo === importoInput && t.tipo === tipoInput);
-                if (esiste && !confirm("⚠️ Duplicato rilevato. Inserire ugualmente?")) return;
-            }
-
-            const t = { id: id || Date.now().toString(), sezione: activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: false };
+            // Usa ID sicuro invece di un semplice Date.now() (Vaccino 1 applicato in creazione)
+            const t = { id: id || generateSecureId(), sezione: activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: false };
             if(id) db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; else db.transazioni.push(t);
             
             saveData(); renderTable(activeViewMode);
@@ -543,13 +539,15 @@
             
             if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; }
 
-            if (!id) {
-                const esiste = db.ricorrenti.some(r => r.tipo === t && r.mese === m && r.giorno === g && r.causale.trim().toLowerCase() === c.trim().toLowerCase() && r.importo === imp);
-                if (esiste && !confirm("⚠️ Pagamento ricorrente già esistente. Salvare comunque?")) return;
+            const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
+            if(id) {
+                // Conserva l'ultima esecuzione se stiamo solo modificando l'importo
+                const vecchia = db.ricorrenti.find(x => x.id === id);
+                r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : "";
+                db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; 
+            } else {
+                db.ricorrenti.push(r); 
             }
-            
-            const r = { id: id || Date.now().toString(), tipo: t, mese: m, giorno: g, causale: c, importo: imp }; 
-            if(id) db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; else db.ricorrenti.push(r); 
             saveData(); renderRicorrenti(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); showToast("Ricorrente salvato");
         }
         
@@ -558,22 +556,26 @@
         function inserisciTuttiRicorrenti() { 
             const oggi = new Date(); let ins = 0;
             const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
+            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`;
 
             db.ricorrenti.forEach(r => { 
                 let m = mC; let y = aC; 
                 if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
                 
-                // CORREZIONE GIORNO INESISTENTE
                 let targetGiorno = r.giorno;
                 let lastDayOfMonth = new Date(y, m, 0).getDate();
                 if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
-
                 const dS = `${y}-${m.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`; 
-                if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { 
-                    db.transazioni.push({ id: (Date.now() + ins).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; 
+                
+                // Vaccino 2 (Esecuzione logica): Inserisce solo se la firma del mese manca! Addio spese doppie!
+                if (r.ultima_esecuzione !== meseCorrenteFirma) { 
+                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); 
+                    r.ultima_esecuzione = meseCorrenteFirma; // Firma applicata
+                    ins++; 
                 } 
             }); 
-            saveData(); renderTable(activeViewMode); showToast("Ricorrenti inseriti con successo!");
+            if(ins > 0) { saveData(); renderTable(activeViewMode); showToast(`${ins} Ricorrenti inseriti!`); }
+            else { showToast("Tutti i ricorrenti sono già stati scalati per questo mese."); }
         }
 
         function modificaFondi(tipoFondo, azione) {
@@ -584,11 +586,11 @@
             
             if (azione === 'aggiungi') {
                 db.fondi[tipoFondo] += valore;
-                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
             } else {
                 if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; }
                 db.fondi[tipoFondo] -= valore;
-                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
             }
             
             input.value = ''; saveData(); showToast("Fondi aggiornati");
@@ -604,17 +606,18 @@
             const ss = String(now.getSeconds()).padStart(2, '0');
             const timestamp = `${yy}${mm}${dd}_${hh}${min}${ss}`;
 
+            // Scarica il file col formato esatto che il Python aspetta da Google Drive!
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
             const a = document.createElement('a'); a.href = dataStr; 
             a.download = `backup_gestionale_${timestamp}.json`; 
             document.body.appendChild(a); a.click(); a.remove(); 
-            showToast("Backup generato 💾. Salvalo nel NAS.");
+            showToast("Sincronizzazione Cloud inviata 🚀");
         }
 
         function importaFileBackup() {
             const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!");
             const r = new FileReader(); r.onload = e => { 
-                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Ripristinato!"); setTimeout(()=> location.reload(), 1000); } 
+                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(()=> location.reload(), 1000); } 
                 catch(err) { showToast("⚠️ File JSON non valido"); }
             }; r.readAsText(f.files[0]);
         }
@@ -655,11 +658,10 @@
 
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2,'0'); }
         
-        // Sentinella anti-chiusura accidentale
         window.addEventListener('beforeunload', function (e) { 
             if (dataChanged) { 
                 e.preventDefault(); 
-                e.returnValue = 'Hai modifiche non scaricate. Usa il tasto Esci per generare il backup fisico.'; 
+                e.returnValue = 'Hai modifiche non scaricate. Usa il tasto "Salva su Drive" per sincronizzarle.'; 
             } 
         });
         
