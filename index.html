@@ -654,6 +654,7 @@
         }
 
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2,'0'); }
+        
         // Sentinella anti-chiusura accidentale
         window.addEventListener('beforeunload', function (e) { 
             if (dataChanged) { 
