@@ -455,7 +455,29 @@
 
             if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
 
-            const t = { id: id || generateSecureId(), sezione: activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: false };
+            let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
+
+            // RICALCOLO DELTA FONDI (Soluzione bug editing cieco)
+            if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
+                const tipoFondo = vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
+                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
+                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] += vecchiaTransazione.importo;
+                
+                if (tipoInput === 'entrata') db.fondi[tipoFondo] += importoInput;
+                if (tipoInput === 'uscita') db.fondi[tipoFondo] -= importoInput;
+            }
+
+            const t = { 
+                id: id || generateSecureId(), 
+                sezione: vecchiaTransazione ? vecchiaTransazione.sezione : activeSection, 
+                tipo: tipoInput, 
+                data: dataInput, 
+                causale: causaleInput, 
+                importo: importoInput, 
+                confermato: vecchiaTransazione ? vecchiaTransazione.confermato : false,
+                isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false 
+            };
+
             if(id) db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; else db.transazioni.push(t);
             
             saveData(); renderTable(activeViewMode);
@@ -524,7 +546,6 @@
         
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
-        function原型confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
         function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
 
         function renderRicorrenti() { 
@@ -645,8 +666,7 @@
                 document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
                     const cols = row.querySelectorAll('td'); 
                     if (cols.length >= 4) {
-                        let tempDate = cols[0].innerText.replace(/
-/g, ' ');
+                        let tempDate = cols[0].innerText.replace(/\n/g, ' ');
                         body.push([tempDate, cols[1].innerText, cols[2].innerText]); 
                     }
                 });
@@ -654,8 +674,7 @@
                 document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
                     const cols = row.querySelectorAll('td'); 
                     if (cols.length >= 3) {
-                        body.push([cols[0].innerText.split('
-')[0], cols[1].innerText, cols[2].innerText]); 
+                        body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); 
                     }
                 }); 
             }
