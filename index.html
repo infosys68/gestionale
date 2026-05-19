@@ -294,7 +294,6 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false; 
 
-        // Generatore di ID Sicuri e impossibili da duplicare (Vaccino 1)
         function generateSecureId() {
             return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16);
         }
@@ -327,7 +326,6 @@
             db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
             if (db.note === undefined) db.note = "";
 
-            // Se trova vecchi ID deboli o inesistenti, li sostituisce con ID blindati
             db.transazioni.forEach(t => { if (!t.id || t.id.length < 15) t.id = generateSecureId(); });
             db.ricorrenti.forEach(r => { if (!r.id || r.id.length < 15) r.id = generateSecureId(); });
         }
@@ -378,7 +376,6 @@
             let saldo = 0; let totaleCartaMese = 0;
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
 
-            // Calcolo Dinamico dei Saldi (Deriva evitata)
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
@@ -406,10 +403,9 @@
 
         function checkRicorrentiStatus() {
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
-            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`; // Formato firma "2026-05"
+            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`;
 
             let mancano = db.ricorrenti.some(r => {
-                // Vaccino 2 (Controllo visuale): Usa la firma temporale invece di cercare per testo
                 return r.ultima_esecuzione !== meseCorrenteFirma;
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
@@ -459,7 +455,6 @@
 
             if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
 
-            // Usa ID sicuro invece di un semplice Date.now() (Vaccino 1 applicato in creazione)
             const t = { id: id || generateSecureId(), sezione: activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: false };
             if(id) db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; else db.transazioni.push(t);
             
@@ -470,8 +465,7 @@
 
         function renderTable(mode) {
             activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = '';
-            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); 
-            const localToday = getLocalDateString();
+            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const localToday = getLocalDateString();
             
             document.querySelectorAll('#transazioni-tabs .nav-link')[0].classList.toggle('active', mode === 'corrente');
             document.querySelectorAll('#transazioni-tabs .nav-link')[1].classList.toggle('active', mode === 'archivio');
@@ -512,9 +506,25 @@
             x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata");
         }
 
-        function delT(id) { if(confirm('Eliminare operazione?')){ db.transazioni = db.transazioni.filter(x=>x.id!==id); saveData(); renderTable(activeViewMode); showToast("Eliminata"); } }
+        function delT(id) { 
+            if(confirm('Eliminare operazione?')) { 
+                const t = db.transazioni.find(x => x.id === id);
+                if (t && t.isFondoTransfer) {
+                    const tipoFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
+                    if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo;
+                    if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo;
+                }
+                
+                db.transazioni = db.transazioni.filter(x=>x.id!==id); 
+                saveData(); 
+                renderTable(activeViewMode); 
+                showToast("Eliminata e Fondi ricalcolati"); 
+            } 
+        }
+        
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
+        function原型confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
         function confermaTutteCarte() { let modificate = false; db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } }
 
         function renderRicorrenti() { 
@@ -541,7 +551,6 @@
 
             const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
             if(id) {
-                // Conserva l'ultima esecuzione se stiamo solo modificando l'importo
                 const vecchia = db.ricorrenti.find(x => x.id === id);
                 r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : "";
                 db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; 
@@ -567,10 +576,9 @@
                 if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
                 const dS = `${y}-${m.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`; 
                 
-                // Vaccino 2 (Esecuzione logica): Inserisce solo se la firma del mese manca! Addio spese doppie!
                 if (r.ultima_esecuzione !== meseCorrenteFirma) { 
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); 
-                    r.ultima_esecuzione = meseCorrenteFirma; // Firma applicata
+                    r.ultima_esecuzione = meseCorrenteFirma;
                     ins++; 
                 } 
             }); 
@@ -606,7 +614,6 @@
             const ss = String(now.getSeconds()).padStart(2, '0');
             const timestamp = `${yy}${mm}${dd}_${hh}${min}${ss}`;
 
-            // Scarica il file col formato esatto che il Python aspetta da Google Drive!
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
             const a = document.createElement('a'); a.href = dataStr; 
             a.download = `backup_gestionale_${timestamp}.json`; 
@@ -638,7 +645,8 @@
                 document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
                     const cols = row.querySelectorAll('td'); 
                     if (cols.length >= 4) {
-                        let tempDate = cols[0].innerText.replace(/\n/g, ' ');
+                        let tempDate = cols[0].innerText.replace(/
+/g, ' ');
                         body.push([tempDate, cols[1].innerText, cols[2].innerText]); 
                     }
                 });
@@ -646,7 +654,8 @@
                 document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
                     const cols = row.querySelectorAll('td'); 
                     if (cols.length >= 3) {
-                        body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); 
+                        body.push([cols[0].innerText.split('
+')[0], cols[1].innerText, cols[2].innerText]); 
                     }
                 }); 
             }
