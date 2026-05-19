@@ -326,7 +326,14 @@
             db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
             if (db.note === undefined) db.note = "";
 
-            db.transazioni.forEach(t => { if (!t.id || t.id.length < 15) t.id = generateSecureId(); });
+            db.transazioni.forEach(t => { 
+                if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
+                if (!t.sezione) t.sezione = 'conto'; // CORREZIONE 2: Impedisce transazioni fantasma
+                if (t.isFondoTransfer && !t.targetFondo) {
+                    // Recupero storico vecchio sistema basato su testo
+                    t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
+                }
+            });
             db.ricorrenti.forEach(r => { if (!r.id || r.id.length < 15) r.id = generateSecureId(); });
         }
 
@@ -457,9 +464,9 @@
 
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
 
-            // RICALCOLO DELTA FONDI (Soluzione bug editing cieco)
+            // CORREZIONE 1: Delta Fondi basato su proprietà blindata 'targetFondo'
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
-                const tipoFondo = vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
+                const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                 if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
                 if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] += vecchiaTransazione.importo;
                 
@@ -475,7 +482,8 @@
                 causale: causaleInput, 
                 importo: importoInput, 
                 confermato: vecchiaTransazione ? vecchiaTransazione.confermato : false,
-                isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false 
+                isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false,
+                targetFondo: vecchiaTransazione ? vecchiaTransazione.targetFondo : null
             };
 
             if(id) db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; else db.transazioni.push(t);
@@ -531,8 +539,9 @@
         function delT(id) { 
             if(confirm('Eliminare operazione?')) { 
                 const t = db.transazioni.find(x => x.id === id);
+                // CORREZIONE 1: Eliminazione basata su proprietà blindata 'targetFondo'
                 if (t && t.isFondoTransfer) {
-                    const tipoFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi';
+                    const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                     if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo;
                     if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo;
                 }
@@ -615,11 +624,12 @@
             
             if (azione === 'aggiungi') {
                 db.fondi[tipoFondo] += valore;
-                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                // CORREZIONE 1: Aggiunta esplicita della proprietà immutabile 'targetFondo'
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; }
                 db.fondi[tipoFondo] -= valore;
-                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             }
             
             input.value = ''; saveData(); showToast("Fondi aggiornati");
