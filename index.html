@@ -16,7 +16,7 @@
     <style>
         :root { --bg-color: #fdfbf7; --text-color: #4a4a4a; --card-bg: rgba(255,255,255,0.85); --border-color: #ddd; }
         
-        /* TEMA SCURO AUTOMATICO PER PIXEL - CON FIX TOTALI */
+        /* TEMA SCURO AUTOMATICO PER PIXEL */
         @media (prefers-color-scheme: dark) {
             :root { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; }
             body { background-color: var(--bg-color); color: var(--text-color); }
@@ -40,7 +40,7 @@
             .bg-conto, .bg-carta, .bg-ricorrenti, .bg-fondi { background-color: transparent !important; border-color: #444 !important; }
         }
 
-        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 30px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 90px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
         .entrata { color: #28a745 !important; font-weight: bold; }
@@ -216,7 +216,7 @@
                 <h3 class="mb-4 fw-bold">⚙️ Archivio Dati</h3>
                 <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
                     <h5>💾 Esporta Database</h5>
-                    <p class="text-muted small">Scarica un file sul telefono per metterlo al sicuro.</p>
+                    <p class="text-muted small">Scarica il file aggiornato per salvarlo nel tuo NAS.</p>
                     <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
                     <hr>
                     <h6 class="mt-2">Ripristina da File Salvato</h6>
@@ -262,13 +262,17 @@
                 <div class="modal-body">
                     <form id="form-ricorrenti" onsubmit="addRicorrente(event)">
                         <input type="hidden" id="ric-id">
-                        <div class="row g-2 mb-3">
-                            <div class="col-6 form-floating"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita</option><option value="entrata">Entrata</option></select><label>Tipo</label></div>
-                            <div class="col-6 form-floating"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div>
+                        <div class="form-floating mb-3">
+                            <select id="ric-tipo" class="form-select"><option value="uscita">Uscita</option><option value="entrata">Entrata</option></select>
+                            <label>Tipo</label>
                         </div>
-                        <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" required><label>Giorno (1-31)</label></div>
-                        <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" required><label>Causale</label></div>
-                        <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" required><label>Importo (€)</label></div>
+                        <div class="form-floating mb-3">
+                            <select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select>
+                            <label>Competenza</label>
+                        </div>
+                        <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="1-31" required><label>Giorno Scadenza (1-31)</label></div>
+                        <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" placeholder="Causale" required><label>Causale</label></div>
+                        <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
                         <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold text-dark shadow-sm">Salva Configurazione</button>
                     </form>
                 </div>
@@ -308,11 +312,28 @@
             navigator.serviceWorker.register('sw.js').then(() => { console.log('Service Worker attivo'); });
         }
 
+        function sanitizeDatabase() {
+            if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" };
+            if (!Array.isArray(db.transazioni)) db.transazioni = [];
+            if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
+            if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
+            
+            db.fondi.personale = Number(db.fondi.personale) || 0;
+            db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
+            if (db.note === undefined) db.note = "";
+
+            db.transazioni.forEach((t, i) => { if (!t.id) t.id = (Date.now() + i).toString(); else t.id = String(t.id); });
+            db.ricorrenti.forEach((r, i) => { if (!r.id) r.id = (Date.now() + i).toString(); else r.id = String(r.id); });
+        }
+
         function checkPassword() {
             if (document.getElementById('password-input').value === '41079') {
-                const localData = localStorage.getItem('gestionale_db');
-                if (localData) db = jsonSafeParse(localData);
-                if (db.note === undefined) db.note = "";
+                const localData = localStorage.getItem('gestionale_db_pixel');
+                if (localData) {
+                    try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; }
+                }
+                
+                sanitizeDatabase();
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('note-area').value = db.note;
@@ -321,19 +342,13 @@
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
-        function jsonSafeParse(data) { try { return JSON.parse(data); } catch(e) { return { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "" }; } }
-
-        function logout() { 
-            if (dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => { location.reload(); }, 800); } 
-            else location.reload(); 
+        function saveData() { 
+            sanitizeDatabase();
+            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
+            dataChanged = true; 
+            updateExitButton(); 
+            updateDashboard(); 
         }
-
-        function saveNotes() {
-            const currentNote = document.getElementById('note-area').value;
-            if (db.note !== currentNote) { db.note = currentNote; document.getElementById('note-status').innerText = "Salvate ✓"; saveData(); setTimeout(() => { document.getElementById('note-status').innerText = ""; }, 2000); }
-        }
-
-        function saveData() { localStorage.setItem('gestionale_db', JSON.stringify(db)); dataChanged = true; updateExitButton(); updateDashboard(); }
 
         function updateExitButton() {
             const btn = document.getElementById('btn-esci');
@@ -343,15 +358,25 @@
             }
         }
 
+        function logout() { 
+            if (dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => { location.reload(); }, 1500); } 
+            else location.reload(); 
+        }
+
+        function saveNotes() {
+            const currentNote = document.getElementById('note-area').value;
+            if (db.note !== currentNote) { db.note = currentNote; document.getElementById('note-status').innerText = "Salvate ✓"; saveData(); setTimeout(() => { document.getElementById('note-status').innerText = ""; }, 2000); }
+        }
+
         function updateDashboard() {
             let saldo = 0; let totaleCartaMese = 0;
-            const oggi = new Date(); const mC = oggi.getMonth(); const aC = oggi.getFullYear();
+            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
 
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
                     if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
-                    if (t.sezione === 'carta' && t.tipo === 'uscita' && dT.getMonth() === mC && dT.getFullYear() === aC) totaleCartaMese += t.importo;
+                    if (t.sezione === 'carta' && t.tipo === 'uscita' && (dT.getMonth()+1) === mC && dT.getFullYear() === aC) totaleCartaMese += t.importo;
                 }
             });
 
@@ -373,11 +398,18 @@
         }
 
         function checkRicorrentiStatus() {
-            const oggi = new Date();
+            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
+            
             let mancano = db.ricorrenti.some(r => {
-                let m = oggi.getMonth() + 1; let y = oggi.getFullYear();
-                if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } }
-                const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`;
+                let mx = mC; let yx = aC;
+                if (r.mese === 'prossimo') { mx++; if (mx > 12) { mx = 1; yx++; } }
+                
+                // CORREZIONE GIORNO INESISTENTE
+                let targetGiorno = r.giorno;
+                let lastDayOfMonth = new Date(yx, mx, 0).getDate();
+                if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
+
+                const dS = `${yx}-${mx.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`;
                 return !db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo);
             });
             const btn = document.getElementById('btn-inserisci-ricorrenti');
@@ -425,7 +457,7 @@
             const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value);
             const tipoInput = document.getElementById('trans-tipo').value;
 
-            if (isNaN(importoInput) || importoInput <= 0) { alert("Importo non valido"); return; }
+            if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
 
             if (!id) { 
                 const esiste = db.transazioni.some(t => t.sezione === activeSection && t.data === dataInput && t.causale.trim().toLowerCase() === causaleInput.trim().toLowerCase() && t.importo === importoInput && t.tipo === tipoInput);
@@ -442,7 +474,8 @@
 
         function renderTable(mode) {
             activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = '';
-            const mC = new Date().getMonth()+1; const aC = new Date().getFullYear(); const localToday = getLocalDateString();
+            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); 
+            const localToday = getLocalDateString();
             
             document.querySelectorAll('#transazioni-tabs .nav-link')[0].classList.toggle('active', mode === 'corrente');
             document.querySelectorAll('#transazioni-tabs .nav-link')[1].classList.toggle('active', mode === 'archivio');
@@ -450,17 +483,16 @@
             
             let dati = db.transazioni.filter(t => t.sezione === activeSection);
             
-            let searchVal = "";
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value);
-                searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
+                const searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; });
                 if (searchVal) dati = dati.filter(t => t.causale.toLowerCase().includes(searchVal));
             } else {
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); });
             }
             
-            dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || (b.id.localeCompare(a.id))).forEach(t => {
+            dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = '', st = '';
                 if(activeSection === 'carta') {
                     if(t.confermato) st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
@@ -509,6 +541,8 @@
             e.preventDefault(); 
             const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value);
             
+            if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; }
+
             if (!id) {
                 const esiste = db.ricorrenti.some(r => r.tipo === t && r.mese === m && r.giorno === g && r.causale.trim().toLowerCase() === c.trim().toLowerCase() && r.importo === imp);
                 if (esiste && !confirm("⚠️ Pagamento ricorrente già esistente. Salvare comunque?")) return;
@@ -523,48 +557,104 @@
         
         function inserisciTuttiRicorrenti() { 
             const oggi = new Date(); let ins = 0;
+            const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
+
             db.ricorrenti.forEach(r => { 
-                let m = oggi.getMonth()+1; let y = oggi.getFullYear(); 
+                let m = mC; let y = aC; 
                 if(r.mese === 'prossimo') { m++; if(m>12){m=1;y++;} } 
-                const dS = `${y}-${m.toString().padStart(2,'0')}-${r.giorno.toString().padStart(2,'0')}`; 
+                
+                // CORREZIONE GIORNO INESISTENTE
+                let targetGiorno = r.giorno;
+                let lastDayOfMonth = new Date(y, m, 0).getDate();
+                if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth;
+
+                const dS = `${y}-${m.toString().padStart(2,'0')}-${targetGiorno.toString().padStart(2,'0')}`; 
                 if (!db.transazioni.some(t => t.data === dS && t.causale === r.causale && t.importo === r.importo)) { 
                     db.transazioni.push({ id: (Date.now() + ins).toString(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); ins++; 
                 } 
             }); 
-            saveData(); alert("Operazione completata!"); renderRicorrenti();
+            saveData(); renderTable(activeViewMode); showToast("Ricorrenti inseriti con successo!");
         }
 
         function modificaFondi(tipoFondo, azione) {
             const input = document.getElementById(`fondo-${tipoFondo}-${azione}`); const valore = parseFloat(input.value);
-            if (!valore || valore <= 0) { alert("Importo non valido"); return; }
+            if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; }
             
             const oggi = getLocalDateString();
             
             if (azione === 'aggiungi') {
                 db.fondi[tipoFondo] += valore;
-                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: `Trasferimento in Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
             } else {
-                if (valore > db.fondi[tipoFondo]) { alert("Fondi insufficienti!"); return; }
+                if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; }
                 db.fondi[tipoFondo] -= valore;
-                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
+                db.transazioni.push({ id: Date.now().toString(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: `Prelievo da Fondo ${tipoFondo}`, importo: valore, confermato: true, isFondoTransfer: true });
             }
             
             input.value = ''; saveData(); showToast("Fondi aggiornati");
         }
 
         function esportaFileBackup() {
-            const ora = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/-+/g, '').replace(/:/g, '');
+            const now = new Date();
+            const yy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const timestamp = `${yy}${mm}${dd}_${hh}${min}${ss}`;
+
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-            const a = document.createElement('a'); a.href = dataStr; a.download = `database_gestionale_${ora.substring(0,8)}.json`; document.body.appendChild(a); a.click(); a.remove(); showToast("File scaricato");
+            const a = document.createElement('a'); a.href = dataStr; 
+            a.download = `backup_gestionale_${timestamp}.json`; 
+            document.body.appendChild(a); a.click(); a.remove(); 
+            showToast("Backup generato 💾. Salvalo nel NAS.");
         }
 
         function importaFileBackup() {
-            const f = document.getElementById('file-import'); if (!f.files[0]) return alert("Seleziona file .json!");
-            const r = new FileReader(); r.onload = e => { db = jsonSafeParse(e.target.result); localStorage.setItem('gestionale_db', JSON.stringify(db)); dataChanged = false; location.reload(); }; r.readAsText(f.files[0]);
+            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!");
+            const r = new FileReader(); r.onload = e => { 
+                try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Ripristinato!"); setTimeout(()=> location.reload(), 1000); } 
+                catch(err) { showToast("⚠️ File JSON non valido"); }
+            }; r.readAsText(f.files[0]);
         }
 
-        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; document.getElementById('filter-mese').value = (new Date().getMonth() + 1).toString().padStart(2,'0'); }
-        function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`, head = [['Data', 'Causale', 'Importo']], body = []; document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save(`Report_${type}.pdf`); }
+        function exportToPDF(type) { 
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF(); 
+            let title = `REPORT ${type.toUpperCase()}`;
+            let head = [['Data', 'Causale', 'Importo']]; 
+            let body = []; 
+
+            if (type === 'fondi') {
+                head = [['Nome Fondo', 'Disponibilita Attuale']];
+                body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]);
+                body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]);
+            } else if (type === 'ricorrenti') {
+                head = [['Competenza e Giorno', 'Causale', 'Importo']];
+                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 4) {
+                        let tempDate = cols[0].innerText.replace(/\n/g, ' ');
+                        body.push([tempDate, cols[1].innerText, cols[2].innerText]); 
+                    }
+                });
+            } else {
+                document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 3) {
+                        body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); 
+                    }
+                }); 
+            }
+
+            doc.text(title, 14, 20); 
+            doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); 
+            doc.save(`Report_${type}.pdf`); 
+        }
+
+        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2,'0'); }
+        
     </script>
 </body>
 </html>
