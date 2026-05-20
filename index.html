@@ -69,11 +69,12 @@
         .form-control, .form-select { background-color: #ffffff !important; color: #4a4a4a !important; border: 1px solid #cccccc !important; }
         .form-control:focus, .form-select:focus { background-color: #ffffff !important; color: #4a4a4a !important; border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
         
-        /* FIX DOCCIA FREDDA PER LE LABEL FLOATING ED EVITARE TESTI DIETRO */
+        /* FIX DEFINITIVO PER LE LABEL FLOATING ED EVITARE TESTI DIETRO INSERIMENTI */
         .form-floating > .form-control::placeholder { color: transparent !important; }
         .form-floating > label { color: #888888 !important; }
 
-        #login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #fdfbf7; }
+        /* ANCORAGGIO ALTO ANTI-TASTIERA: SBLOCCA IL TASTO SBLOCCA NELL'APP INSTALLATA */
+        #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: #fdfbf7; }
     </style>
 </head>
 <body>
@@ -442,7 +443,6 @@
             }
         }
 
-        /* LOGICA DEL SALDO ORIENTATA SUL TEMA CHIARO FISSO */
         function updateDashboard() {
             let saldo = 0; 
             let totaleCartaMese = 0;
@@ -852,15 +852,15 @@
             } 
         }
         
-        function modificaFondi(tipoFondo, azione) { 
-            const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); 
+        function modificaFondi(tipoFondo, offset) { 
+            const input = document.getElementById("fondo-" + tipoFondo + "-" + offset); 
             const valore = parseFloat(input.value); 
             if (isNaN(valore) || valore <= 0) { 
                 showToast("⚠️ Importo non valido"); 
                 return; 
             } 
             const oggi = getLocalDateString(); 
-            if (azione === 'aggiungi') { 
+            if (offset === 'aggiungi') { 
                 db.fondi[tipoFondo] += valore; 
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
             } else { 
