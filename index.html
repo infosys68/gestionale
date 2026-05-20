@@ -21,7 +21,7 @@
             --border-color: #ddd; 
         }
         
-        /* TEMA SCURO REVISIONATO AD ALTO CONTRASTO - RISOLTO NERO SU NERO */
+        /* TEMA SCURO - CORREZIONE COMPLETA LEGIBILITÀ INPUT */
         @media (prefers-color-scheme: dark) {
             :root { 
                 --bg-color: #121212; 
@@ -34,13 +34,14 @@
                 color: var(--text-color) !important; 
             }
             
-            /* IMPEDISCE AI TESTI NATIVI DI DIVENTARE NERI SU FONDO NERO */
+            /* FORZATURA TOTALE COLORE TESTO INPUT (BIANCO SU GRIGIO) */
             input, select, textarea, .form-control, .form-select, #note-area, #password-input,
             input[type="password"], input[type="number"], input[type="text"], input[type="date"] { 
                 background-color: #2c2c2c !important; 
                 color: #ffffff !important; 
                 border: 2px solid #666666 !important;
                 caret-color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important; /* Blocca la forzatura di Chrome Android */
             }
             
             input:focus, select:focus, textarea:focus, .form-control:focus, .form-select:focus, #note-area:focus, #password-input:focus { 
@@ -49,11 +50,13 @@
                 border-color: #3b82f6 !important; 
                 outline: none !important;
                 box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+                -webkit-text-fill-color: #ffffff !important;
             }
 
             ::placeholder, .form-control::placeholder {
                 color: #b0b0b0 !important;
                 opacity: 1 !important;
+                -webkit-text-fill-color: #b0b0b0 !important;
             }
 
             select option { 
