@@ -198,7 +198,7 @@
                     <div id="alert-container"></div>
                     <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Attuale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
-                    <div class="mt-1 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 1384 942</div>
+                    <div class="mt-1 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
                     <div id="last-update-reg" class="mt-1 opacity-50 small" style="font-size: 0.75rem; font-style: italic;">Dati aggiornati al: --/-- ore --:--</div>
                     
                     <div class="d-flex justify-content-between mt-3">
@@ -921,7 +921,7 @@
                 return; 
             } 
             const oggi = getLocalDateString(); 
-            if (azione === 'aggiungi') { 
+            if (action === 'aggiungi') { 
                 db.fondi[tipoFondo] += valore; 
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
             } else { 
@@ -955,6 +955,11 @@
             a.click(); 
             a.remove(); 
             showToast("Sincronizzazione Cloud inviata 🚀"); 
+        }
+        
+        function cambiaIBAN(id) {
+             const el = document.getElementById(id);
+             if (el) el.innerText = "IBAN: IT33 E030 5801 6041 0057 •••• •••";
         }
         
         function importaFileBackup() { 
