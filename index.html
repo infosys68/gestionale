@@ -21,7 +21,7 @@
             --border-color: #ddd; 
         }
         
-        /* TEMA SCURO - CORREZIONE COMPLETA LEGIBILITÀ INPUT E RIMOZIONE ALONI BIANCHI */
+        /* TEMA SCURO REVISIONATO - FIX COMPLETO PRIVACY E LEGIBILITÀ */
         @media (prefers-color-scheme: dark) {
             :root { 
                 --bg-color: #121212; 
@@ -34,15 +34,16 @@
                 color: var(--text-color) !important; 
             }
             
-            /* FORZATURA TOTALE COLORE TESTO INPUT (BIANCO SU GRIGIO) */
+            /* FORZATURA TOTAL-BLACK DEI CAMPI INSERIMENTO */
             input, select, textarea, .form-control, .form-select, #note-area, #password-input,
             input[type="password"], input[type="number"], input[type="text"], input[type="date"] { 
                 background-color: #2c2c2c !important; 
                 color: #ffffff !important; 
                 border: 2px solid #666666 !important;
                 caret-color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important; /* Blocca la forzatura di Chrome Android */
-                box-shadow: none !important; /* Rimuove aloni o riquadri bianchi sottostanti nativi */
+                -webkit-text-fill-color: #ffffff !important;
+                box-shadow: none !important;
+                background-image: none !important;
             }
             
             input:focus, select:focus, textarea:focus, .form-control:focus, .form-select:focus, #note-area:focus, #password-input:focus { 
@@ -50,7 +51,7 @@
                 color: #ffffff !important; 
                 border-color: #3b82f6 !important; 
                 outline: none !important;
-                box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+                box-shadow: none !important;
                 -webkit-text-fill-color: #ffffff !important;
             }
 
@@ -60,9 +61,11 @@
                 -webkit-text-fill-color: #b0b0b0 !important;
             }
 
-            select option { 
+            /* FIX OPZIONI INTERNE SELECT SUL TEMA SCURO PIXEL */
+            select option, select optgroup { 
                 background-color: #2c2c2c !important; 
                 color: #ffffff !important; 
+                -webkit-text-fill-color: #ffffff !important;
             }
 
             .table { 
@@ -82,19 +85,23 @@
                 color: #fff !important; 
             }
             
-            /* FIX ETICHETTE MODALI E CORREZIONE DIV DI SFONDO INPUT */
+            /* CANCELLAZIONE DEFINITIVA QUADRATINI E ALONI BIANCHI DA FLUID LABEL BOOTSTRAP */
             .form-floating {
+                background-color: transparent !important;
                 background: transparent !important;
                 box-shadow: none !important;
             }
             .form-floating > label { 
                 color: #b0b0b0 !important; 
+                background-color: transparent !important;
+                background: transparent !important;
             }
             .form-floating > .form-control:focus ~ label,
             .form-floating > .form-control:not(:placeholder-shown) ~ label,
             .form-floating > .form-select ~ label {
                 color: #3b82f6 !important;
-                background-color: #1e1e1e !important;
+                background-color: #1e1e1e !important; /* Coordina il quadratino al fondo della modale */
+                background: #1e1e1e !important;
                 padding: 0 4px !important;
                 border-radius: 4px !important;
             }
@@ -595,7 +602,8 @@
             
             const btn = document.getElementById('btn-inserisci-ricorrenti');
             if (btn) {
-                btn.style.display = mancano ? 'block' : 'none';
+                btn.style.display = 'block';
+                if (!mancano) btn.style.display = 'none';
             }
 
             const ultimoGiornoMese = new Date(aC, mC, 0).getDate();
