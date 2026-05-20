@@ -21,7 +21,7 @@
             --border-color: #ddd; 
         }
         
-        /* TEMA SCURO - CORREZIONE COMPLETA LEGIBILITÀ INPUT */
+        /* TEMA SCURO - CORREZIONE COMPLETA LEGIBILITÀ INPUT E RIMOZIONE ALONI BIANCHI */
         @media (prefers-color-scheme: dark) {
             :root { 
                 --bg-color: #121212; 
@@ -42,6 +42,7 @@
                 border: 2px solid #666666 !important;
                 caret-color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important; /* Blocca la forzatura di Chrome Android */
+                box-shadow: none !important; /* Rimuove aloni o riquadri bianchi sottostanti nativi */
             }
             
             input:focus, select:focus, textarea:focus, .form-control:focus, .form-select:focus, #note-area:focus, #password-input:focus { 
@@ -81,6 +82,11 @@
                 color: #fff !important; 
             }
             
+            /* FIX ETICHETTE MODALI E CORREZIONE DIV DI SFONDO INPUT */
+            .form-floating {
+                background: transparent !important;
+                box-shadow: none !important;
+            }
             .form-floating > label { 
                 color: #b0b0b0 !important; 
             }
@@ -101,6 +107,7 @@
                 background-color: #1e1e1e !important; 
                 color: #e0e0e0 !important; 
                 border: 1px solid #444 !important; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
             }
             .dropdown-menu { 
                 background-color: #1e1e1e !important; 
@@ -641,8 +648,8 @@
             myModal.show();
         }
 
-        function addTransaction(e) {
-            e.preventDefault();
+        function addTransaction(event) {
+            event.preventDefault();
             const id = document.getElementById('trans-id').value; 
             const dataInput = document.getElementById('trans-data').value;
             const causaleInput = document.getElementById('trans-causale').value; 
@@ -847,8 +854,8 @@
             myModal.show(); 
         }
         
-        function addRicorrente(e) { 
-            e.preventDefault(); 
+        function addRicorrente(event) { 
+            event.preventDefault(); 
             const id = document.getElementById('ric-id').value; 
             const t = document.getElementById('ric-tipo').value; 
             const m = document.getElementById('ric-mese').value; 
