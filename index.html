@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestionale Pixel (Tema Chiaro)</title>
+    <title>Gestionale Pixel</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
@@ -14,21 +14,151 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* TEMA CHIARO FISSO - ELIMINATI TUTTI I CONFLITTI DI INVERSIONE COLORE */
-        body { 
-            background-color: #fdfbf7 !important; 
-            font-family: 'Segoe UI', sans-serif; 
-            color: #4a4a4a !important; 
-            padding-bottom: 90px; 
-            -webkit-tap-highlight-color: transparent; 
+        :root { 
+            --bg-color: #fdfbf7; 
+            --text-color: #4a4a4a; 
+            --card-bg: rgba(255,255,255,0.85); 
+            --border-color: #ddd; 
         }
+        
+        /* TEMA SCURO REVISIONATO - FIX COMPLETO PRIVACY E LEGIBILITÀ */
+        @media (prefers-color-scheme: dark) {
+            :root { 
+                --bg-color: #121212; 
+                --text-color: #f5f5f5; 
+                --card-bg: #1e1e1e; 
+                --border-color: #383838; 
+            }
+            body { 
+                background-color: var(--bg-color) !important; 
+                color: var(--text-color) !important; 
+            }
+            
+            /* FORZATURA TOTAL-BLACK DEI CAMPI INSERIMENTO */
+            input, select, textarea, .form-control, .form-select, #note-area, #password-input,
+            input[type="password"], input[type="number"], input[type="text"], input[type="date"] { 
+                background-color: #2c2c2c !important; 
+                color: #ffffff !important; 
+                border: 2px solid #666666 !important;
+                caret-color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                box-shadow: none !important;
+                background-image: none !important;
+            }
+            
+            input:focus, select:focus, textarea:focus, .form-control:focus, .form-select:focus, #note-area:focus, #password-input:focus { 
+                background-color: #1a1a1a !important; 
+                color: #ffffff !important; 
+                border-color: #3b82f6 !important; 
+                outline: none !important;
+                box-shadow: none !important;
+                -webkit-text-fill-color: #ffffff !important;
+            }
+
+            ::placeholder, .form-control::placeholder {
+                color: #b0b0b0 !important;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #b0b0b0 !important;
+            }
+
+            /* FIX OPZIONI INTERNE SELECT SUL TEMA SCURO PIXEL */
+            select option, select optgroup { 
+                background-color: #2c2c2c !important; 
+                color: #ffffff !important; 
+                -webkit-text-fill-color: #ffffff !important;
+            }
+
+            .table { 
+                --bs-table-bg: transparent !important;
+                --bs-table-color: #e0e0e0 !important; 
+                color: #e0e0e0 !important; 
+            }
+            .table td, .table th { 
+                color: #e0e0e0 !important; 
+                border-color: #383838 !important; 
+            }
+            .table-light { 
+                background-color: #2c2c2c !important; 
+                color: #fff !important; 
+            }
+            .table-light th { 
+                color: #fff !important; 
+            }
+            
+            /* CANCELLAZIONE DEFINITIVA QUADRATINI E ALONI BIANCHI DA FLUID LABEL BOOTSTRAP */
+            .form-floating {
+                background-color: transparent !important;
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+            .form-floating > label { 
+                color: #b0b0b0 !important; 
+                background-color: transparent !important;
+                background: transparent !important;
+            }
+            .form-floating > .form-control:focus ~ label,
+            .form-floating > .form-control:not(:placeholder-shown) ~ label,
+            .form-floating > .form-select ~ label {
+                color: #3b82f6 !important;
+                background-color: #1e1e1e !important; /* Coordina il quadratino al fondo della modale */
+                background: #1e1e1e !important;
+                padding: 0 4px !important;
+                border-radius: 4px !important;
+            }
+            
+            input[type="date"]::-webkit-calendar-picker-indicator { 
+                filter: invert(1); 
+            }
+            
+            .modal-content { 
+                background-color: #1e1e1e !important; 
+                color: #e0e0e0 !important; 
+                border: 1px solid #444 !important; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+            }
+            .dropdown-menu { 
+                background-color: #1e1e1e !important; 
+                border-color: #444 !important; 
+            }
+            .dropdown-item { 
+                color: #e0e0e0 !important; 
+            }
+            .dropdown-item:hover { 
+                background-color: #2c2c2c !important; 
+                color: #ffffff !important; 
+            }
+            .btn-close { 
+                filter: invert(1); 
+            }
+            
+            .note-container { 
+                background: #2c2c2c !important; 
+                border-left-color: #f57f17 !important; 
+                color: #ffffff !important; 
+            }
+            .text-dark { 
+                color: #e0e0e0 !important; 
+            }
+            .text-muted { 
+                color: #adb5bd !important; 
+            }
+            .bg-white { 
+                background-color: #1e1e1e !important; 
+            }
+            
+            .bg-conto, .bg-carta, .bg-ricorrenti, .bg-fondi { 
+                background-color: transparent !important; 
+                border-color: #444 !important; 
+            }
+        }
+
+        body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; color: var(--text-color); padding-bottom: 90px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
         .entrata { color: #28a745 !important; font-weight: bold; }
         .uscita { color: #dc3545 !important; font-weight: bold; }
-        .riga-futura { background-color: #f1f3f5 !important; opacity: 0.7; border-left: 3px solid #0d6efd; }
+        .riga-futura { opacity: 0.6; border-left: 3px solid #0d6efd; }
         
-        /* COLORI DELLE SEZIONI (Sfondi chiari ad alta leggibilità) */
         .bg-conto { background-color: #e3f2fd !important; border: 2px solid #a1c4fd; }
         .bg-carta { background-color: #fff0f3 !important; border: 2px solid #ff9a9e; }
         .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
@@ -37,43 +167,32 @@
         .section-container { animation: fadeIn .25s ease; padding: 15px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         
-        .table { color: #4a4a4a !important; }
-        .table td, .table th { border-color: #ddd !important; }
-        .table-light th { background-color: #f1f3f5 !important; color: #4a4a4a !important; }
+        .dropdown-menu { background-color: var(--card-bg); border-color: var(--border-color); }
+        .dropdown-item { color: var(--text-color); }
+        .table { --bs-table-bg: transparent; color: var(--text-color); }
+        .table td, .table th { border-color: var(--border-color); }
 
-        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
+        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
         .fab-btn:active { transform: scale(.92); }
 
-        .top-header { position: sticky; top: 0; background: #fdfbf7; z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
-        
-        .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 25px 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; }
+        .top-header { position: sticky; top: 0; background: var(--bg-color); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 25px 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
         .valore-saldo { font-size: 2.8rem; font-weight: 900; margin: 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
-        .box-metrica { background: rgba(0, 0, 0, 0.15); border-radius: 12px; padding: 10px; flex: 1; font-size: 0.8rem; margin: 0 5px; }
-        
-        .table-container-white { background: rgba(255,255,255,0.95); border-radius: 15px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .box-metrica { background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 10px; flex: 1; font-size: 0.8rem; margin: 0 5px; }
+        .table-container-white { background: var(--card-bg); border-radius: 15px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .alert-negativo, .alert-ricorrenti { padding: 4px 12px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 8px; }
-        .alert-negativo { background: #fff; color: red; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } 
-        .alert-ricorrenti { background: #ff9800; color: #fff; }
+        .alert-negativo { background: #fff; color: red; } .alert-ricorrenti { background: #ff9800; color: #fff; }
 
-        .note-container { background: #fff9c4 !important; border-left: 6px solid #fbc02d !important; border-radius: 15px; color: #5d4037 !important; }
-        #note-area { background: transparent !important; color: #5d4037 !important; font-style: italic; }
-
-        /* PULIZIA MODALI TEMA CHIARO - ELIMINATI GLI INPUT-BOX CON BACKGROUND ANOMALI */
-        .modal-content { background-color: #ffffff !important; color: #4a4a4a !important; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
-        .form-control, .form-select { background-color: #ffffff !important; color: #4a4a4a !important; border: 1px solid #cccccc !important; }
-        .form-control:focus, .form-select:focus { background-color: #ffffff !important; color: #4a4a4a !important; border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
-        
-        /* FIX DEFINITIVO PER EVITARE SCRITTE SOVRAPPOSTE DIETRO IL GIORNO */
-        .form-floating > .form-control::placeholder { color: transparent !important; }
+        #login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #121212; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <div class="p-4 rounded-4 shadow-lg bg-white" style="border: 1px solid #ddd; text-align: center; width: 90%; max-width: 350px;">
+        <div class="p-4 rounded-4 shadow-lg" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(15px); text-align: center; width: 90%; max-width: 350px;">
             <div style="font-size: 4rem;">📱</div>
-            <h2 class="mb-4 fw-bold text-dark">Gestionale App</h2>
-            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center fw-bold" placeholder="PIN" inputmode="numeric" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
+            <h2 class="mb-4 fw-bold text-white">Gestionale App</h2>
+            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center fw-bold" placeholder="PIN" inputmode="numeric" style="letter-spacing: 5px; box-shadow: none;" onfocus="this.style.borderColor='#0d6efd'" onblur="this.style.borderColor='#666666'" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
             <div id="login-error" class="text-danger mt-3 hidden fw-bold">❌ PIN errato.</div>
         </div>
@@ -121,13 +240,13 @@
                 <div class="note-container p-3 rounded-4 shadow-sm mb-4">
                     <h6 class="fw-bold mb-2">📌 Appunti Veloci</h6>
                     <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." onblur="saveNotes()" style="min-height: 80px; box-shadow: none;"></textarea>
-                    <div class="text-end mt-1"><small id="note-status"></small></div>
+                    <div class="text-end mt-1"><small style="color: #f57f17;" id="note-status"></small></div>
                 </div>
             </div>
 
             <div id="transazioni-section" class="section-container hidden">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 id="transazioni-title" class="fw-bold m-0 text-dark">...</h3>
+                    <h3 id="transazioni-title" class="fw-bold m-0">...</h3>
                     <div class="d-flex gap-2">
                         <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Confirm</button>
                         <button onclick="exportToPDF('transazioni')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
@@ -158,7 +277,7 @@
 
             <div id="ricorrenti-section" class="section-container hidden">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="fw-bold m-0 text-dark">🔁 Ricorrenti</h3>
+                    <h3 class="fw-bold m-0">🔁 Ricorrenti</h3>
                     <button onclick="exportToPDF('ricorrenti')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
                 </div>
                 
@@ -176,11 +295,11 @@
 
             <div id="fondi-section" class="section-container hidden">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="fw-bold m-0 text-dark">💰 Gestione Fondi</h3>
+                    <h3 class="fw-bold m-0">💰 Gestione Fondi</h3>
                     <button onclick="exportToPDF('fondi')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
                 </div>
                 
-                <div class="card p-3 shadow-sm border-0 rounded-4 mb-3 bg-white border">
+                <div class="card p-3 shadow-sm border-0 rounded-4 mb-3" style="background: var(--card-bg);">
                     <h5 class="text-success fw-bold">Fondo Personale</h5>
                     <h2 id="tot-personale-sec" class="text-success mb-3 fw-bold">€ 0.00</h2>
                     <div class="input-group mb-2">
@@ -193,7 +312,7 @@
                     </div>
                 </div>
 
-                <div class="card p-3 shadow-sm border-0 rounded-4 bg-white border" style="background: var(--card-bg);">
+                <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
                     <h5 class="text-primary fw-bold">Fondo Risparmi</h5>
                     <h2 id="tot-risparmi-sec" class="text-primary mb-3 fw-bold">€ 0.00</h2>
                     <div class="input-group mb-2">
@@ -208,13 +327,13 @@
             </div>
 
             <div id="backup-section" class="section-container hidden">
-                <h3 class="mb-4 fw-bold text-dark">⚙️ Archivio Dati</h3>
-                <div class="card p-3 shadow-sm border-0 rounded-4 bg-white border">
+                <h3 class="mb-4 fw-bold">⚙️ Archivio Dati</h3>
+                <div class="card p-3 shadow-sm border-0 rounded-4" style="background: var(--card-bg);">
                     <h5>💾 Esporta Database</h5>
                     <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
                     <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
                     <hr>
-                    <h6 class="mt-2 text-dark">Ripristina da File Salvato</h6>
+                    <h6 class="mt-2">Ripristina da File Salvato</h6>
                     <input type="file" id="file-import" class="form-control form-control-sm mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
                 </div>
@@ -230,7 +349,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark" id="modal-title-trans">Aggiungi Movimento</h5>
+                    <h5 class="modal-title fw-bold" id="modal-title-trans">Aggiungi Movimento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -238,21 +357,12 @@
                         <input type="hidden" id="trans-id">
                         <div class="form-floating mb-3">
                             <select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select>
-                            <label class="text-muted">Tipo Movimento</label>
+                            <label>Tipo Movimento</label>
                         </div>
-                        <div class="form-floating mb-3">
-                            <input type="date" id="trans-data" class="form-control" required>
-                            <label class="text-muted">Data</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" id="trans-causale" class="form-control" placeholder="Causale" required>
-                            <label class="text-muted">Causale</label>
-                        </div>
-                        <div class="form-floating mb-4">
-                            <input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required>
-                            <label class="text-muted">Importo (€)</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">Salva Movimento</button>
+                        <div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div>
+                        <div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" placeholder="Causale" required><label>Causale</label></div>
+                        <div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">Salva</button>
                     </form>
                 </div>
             </div>
@@ -262,30 +372,21 @@
     <div class="modal fade" id="modalRicorrente" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold text-dark">Configura Ricorrente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Configura Ricorrente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="form-ricorrenti" onsubmit="addRicorrente(event)">
                         <input type="hidden" id="ric-id">
                         <div class="form-floating mb-3">
-                            <select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select>
-                            <label class="text-muted">Tipo</label>
+                            <select id="ric-tipo" class="form-select"><option value="uscita">Uscita</option><option value="entrata">Entrata</option></select>
+                            <label>Tipo</label>
                         </div>
                         <div class="form-floating mb-3">
                             <select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select>
-                            <label class="text-muted">Competenza</label>
+                            <label>Competenza</label>
                         </div>
-                        <div class="form-floating mb-3">
-                            <input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" required>
-                            <label class="text-muted">Giorno Scadenza (1-31)</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" id="ric-causale" class="form-control" placeholder="Causale" required>
-                            <label class="text-muted">Causale</label>
-                        </div>
-                        <div class="form-floating mb-4">
-                            <input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required>
-                            <label class="text-muted">Importo (€)</label>
-                        </div>
+                        <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="1-31" required><label>Giorno Scadenza (1-31)</label></div>
+                        <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" placeholder="Causale" required><label>Causale</label></div>
+                        <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
                         <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold text-dark shadow-sm">Salva Configurazione</button>
                     </form>
                 </div>
@@ -461,10 +562,10 @@
             alertContainer.innerHTML = '';
 
             if (saldo < 0) { 
-                mainCard.style.background = 'linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%)'; 
+                mainCard.classList.add('bg-danger'); 
                 alertContainer.innerHTML = '<div class="alert-negativo">⚠️ CONTO IN NEGATIVO</div>'; 
             } else { 
-                mainCard.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; 
+                mainCard.classList.remove('bg-danger'); 
             }
 
             document.getElementById('saldo-totale').innerText = "€ " + saldo.toFixed(2);
@@ -630,15 +731,24 @@
                 const sA = parseInt(document.getElementById('filter-anno').value); 
                 const sM = parseInt(document.getElementById('filter-mese').value);
                 const searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
-                dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; });
-                if (searchVal) { dati = dati.filter(t => t.causale.toLowerCase().includes(searchVal)); }
+                dati = dati.filter(t => { 
+                    const d = new Date(t.data); 
+                    return d.getFullYear() === sA && (d.getMonth()+1) === sM; 
+                });
+                if (searchVal) {
+                    dati = dati.filter(t => t.causale.toLowerCase().includes(searchVal));
+                }
             } else {
-                dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); });
+                dati = dati.filter(t => { 
+                    const d = new Date(t.data); 
+                    return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); 
+                });
             }
             
             dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; 
-                let az = ''; let st = '';
+                let az = '';
+                let st = '';
                 if (activeSection === 'carta') {
                     if (t.confermato) {
                         st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
@@ -681,9 +791,14 @@
                 const t = db.transazioni.find(x => x.id === id);
                 if (t && t.isFondoTransfer) {
                     const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
-                    if (t.tipo === 'entrata') { db.fondi[tipoFondo] += t.importo; }
-                    if (t.tipo === 'uscita') { db.fondi[tipoFondo] -= t.importo; }
+                    if (t.tipo === 'entrata') {
+                        db.fondi[tipoFondo] += t.importo;
+                    }
+                    if (t.tipo === 'uscita') {
+                        db.fondi[tipoFondo] -= t.importo;
+                    }
                 }
+                
                 db.transazioni = db.transazioni.filter(x => x.id !== id); 
                 saveData(); 
                 renderTable(activeViewMode); 
@@ -704,8 +819,19 @@
         
         function confermaTutteCarte() { 
             let modificate = false; 
-            db.transazioni.forEach(t => { if (t.sezione === 'carta' && !t.confermato) { t.confermato = true; modificate = true; } }); 
-            if (modificate) { saveData(); renderTable(activeViewMode); showToast("Tutte le carte confermate!"); } else { showToast("Niente da confermare"); } 
+            db.transazioni.forEach(t => { 
+                if (t.sezione === 'carta' && !t.confermato) { 
+                    t.confermato = true; 
+                    modificate = true; 
+                } 
+            }); 
+            if (modificate) { 
+                saveData(); 
+                renderTable(activeViewMode); 
+                showToast("Tutte le carte confermate!"); 
+            } else { 
+                showToast("Niente da confermare"); 
+            } 
         }
 
         function renderRicorrenti() { 
@@ -745,76 +871,190 @@
             const c = document.getElementById('ric-causale').value; 
             const imp = parseFloat(document.getElementById('ric-importo').value); 
             
-            if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; } 
+            if (isNaN(imp) || imp <= 0) { 
+                showToast("⚠️ Importo non valido"); 
+                return; 
+            } 
             
             const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
             if (id) { 
                 const vecchia = db.ricorrenti.find(x => x.id === id); 
                 r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; 
                 db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; 
-            } else { db.ricorrenti.push(r); } 
-            saveData(); renderRicorrenti(); 
+            } else { 
+                db.ricorrenti.push(r); 
+            } 
+            saveData(); 
+            renderRicorrenti(); 
             bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); 
             showToast("Ricorrente salvato"); 
         }
         
-        function delR(id) { if (confirm('Eliminare ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRicorrenti(); showToast("Eliminato"); } }
+        function delR(id) { 
+            if (confirm('Eliminare ricorrente?')){ 
+                db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); 
+                saveData(); 
+                renderRicorrenti(); 
+                showToast("Eliminato"); 
+            } 
+        }
         
         function inserisciTuttiRicorrenti() { 
-            const oggi = new Date(); let ins = 0; const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const meseCorrenteFirma = aC + "-" + mC.toString().padStart(2, '0'); 
+            const oggi = new Date(); 
+            let ins = 0; 
+            const mC = oggi.getMonth() + 1; 
+            const aC = oggi.getFullYear(); 
+            const meseCorrenteFirma = aC + "-" + mC.toString().padStart(2, '0'); 
+            
             db.ricorrenti.forEach(r => { 
-                let m = mC; let y = aC; if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } } 
-                let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
+                let m = mC; 
+                let y = aC; 
+                if (r.mese === 'prossimo') { 
+                    m++; 
+                    if (m > 12) { m = 1; y++; } 
+                } 
+                
+                let targetGiorno = r.giorno; 
+                let lastDayOfMonth = new Date(y, m, 0).getDate(); 
+                if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
                 const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
+                
                 if (r.ultima_esecuzione !== meseCorrenteFirma) { 
-                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); 
-                    r.ultima_esecuzione = meseCorrenteFirma; ins++; 
+                    db.transazioni.push({ 
+                        id: generateSecureId(), 
+                        sezione: 'conto', 
+                        tipo: r.tipo, 
+                        data: dS, 
+                        causale: r.causale, 
+                        importo: r.importo, 
+                        confermato: false 
+                    }); 
+                    r.ultima_esecuzione = meseCorrenteFirma; 
+                    ins++; 
                 } 
             }); 
-            if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else { showToast("Tutti i ricorrenti sono già stati scalati."); } 
+            
+            if (ins > 0) { 
+                saveData(); 
+                renderTable(activeViewMode); 
+                showToast(ins + " Ricorrenti inseriti!"); 
+            } else { 
+                showToast("Tutti i ricorrenti sono già stati scalati per questo mese."); 
+            } 
         }
         
         function modificaFondi(tipoFondo, azione) { 
-            const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); const valore = parseFloat(input.value); 
-            if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } 
+            const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); 
+            const valore = parseFloat(input.value); 
+            if (isNaN(valore) || valore <= 0) { 
+                showToast("⚠️ Importo non valido"); 
+                return; 
+            } 
             const oggi = getLocalDateString(); 
             if (azione === 'aggiungi') { 
                 db.fondi[tipoFondo] += valore; 
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
             } else { 
-                if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } 
+                if (valore > db.fondi[tipoFondo]) { 
+                    showToast("⚠️ Fondi insufficienti!"); 
+                    return; 
+                } 
                 db.fondi[tipoFondo] -= valore; 
                 db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
             } 
-            input.value = ''; saveData(); showToast("Fondi aggiornati"); 
+            input.value = ''; 
+            saveData(); 
+            showToast("Fondi aggiornati"); 
         }
         
         function esportaFileBackup() { 
-            const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; 
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); 
+            const now = new Date(); 
+            const yy = now.getFullYear(); 
+            const mm = String(now.getMonth() + 1).padStart(2, '0'); 
+            const dd = String(now.getDate()).padStart(2, '0'); 
+            const hh = String(now.getHours()).padStart(2, '0'); 
+            const min = String(now.getMinutes()).padStart(2, '0'); 
+            const ss = String(now.getSeconds()).padStart(2, '0'); 
+            const timestamp = yy + mm + dd + "_" + hh + min + ss; 
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); 
+            const a = document.createElement('a'); 
+            a.href = dataStr; 
+            a.download = "backup_gestionale_" + timestamp + ".json"; 
+            document.body.appendChild(a); 
+            a.click(); 
+            a.remove(); 
+            showToast("Sincronizzazione Cloud inviata 🚀"); 
         }
         
         function importaFileBackup() { 
-            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona file .json!"); 
+            const f = document.getElementById('file-import'); 
+            if (!f.files[0]) return showToast("⚠️ Seleziona prima un file .json!"); 
             const r = new FileReader(); 
-            r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(() => { location.reload(); }, 1000); } catch(err) { showToast("⚠️ File JSON non valido"); } }; 
+            r.onload = e => { 
+                try { 
+                    db = JSON.parse(e.target.result); 
+                    sanitizeDatabase(); 
+                    saveData(); 
+                    showToast("Database Sincronizzato!"); 
+                    setTimeout(() => { location.reload(); }, 1000); 
+                } catch(err) { 
+                    showToast("⚠️ File JSON non valido"); 
+                } 
+            }; 
             r.readAsText(f.files[0]); 
         }
         
         function exportToPDF(type) { 
-            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); let head = [['Data', 'Causale', 'Importo']]; let body = []; 
-            if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)], ['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } 
-            else if (type === 'ricorrenti') { head = [['Competenza e Giorno', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) body.push([cols[0].innerText.replace(/\n/g, ' '), cols[1].innerText, cols[2].innerText]); }); } 
-            else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); } 
-            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save("Report_" + type + ".pdf"); 
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF(); 
+            let title = "REPORT " + type.toUpperCase(); 
+            let head = [['Data', 'Causale', 'Importo']]; 
+            let body = []; 
+            if (type === 'fondi') { 
+                head = [['Nome Fondo', 'Disponibilita Attuale']]; 
+                body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]); 
+                body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); 
+            } else if (type === 'ricorrenti') { 
+                head = [['Competenza e Giorno', 'Causale', 'Importo']]; 
+                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 4) { 
+                        let tempDate = cols[0].innerText.replace(/\n/g, ' '); 
+                        body.push([tempDate, cols[1].innerText, cols[2].innerText]); 
+                    } 
+                }); 
+            } else { 
+                document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 3) { 
+                        body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); 
+                    } 
+                }); 
+            } 
+            doc.text(title, 14, 20); 
+            doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); 
+            doc.save("Report_" + type + ".pdf"); 
         }
         
         function populateAnnoFiltri() { 
-            const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += '<option value="' + i + '">' + i + '</option>'; } 
-            let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2, '0'); 
+            const sA = document.getElementById('filter-anno'); 
+            const aC = new Date().getFullYear(); 
+            if (sA) { 
+                sA.innerHTML = ''; 
+                for (let i = aC; i >= aC - 5; i--) sA.innerHTML += '<option value="' + i + '">' + i + '</option>'; 
+            } 
+            let pM = new Date().getMonth() + 1; 
+            const sM = document.getElementById('filter-mese'); 
+            if (sM) sM.value = pM.toString().padStart(2, '0'); 
         }
         
-        window.addEventListener('beforeunload', function (e) { if (dataChanged) { e.preventDefault(); e.returnValue = 'Hai modifiche non caricate.'; } });
+        window.addEventListener('beforeunload', function (e) { 
+            if (dataChanged) { 
+                e.preventDefault(); 
+                e.returnValue = 'Hai modifiche non scaricate. Usa il tasto "Salva su Drive" per sincronizzarle.'; 
+            } 
+        });
     </script>
 </body>
 </html>
