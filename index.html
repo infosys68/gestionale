@@ -130,7 +130,7 @@
 
                 <div class="note-container p-3 rounded-4 shadow-sm mb-4">
                     <h6 class="fw-bold mb-2">📌 Appunti Veloci</h6>
-                    <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." onblur="saveNotes()" style="min-height: 80px; box-shadow: none;"></textarea>
+                    <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." rows="6" onblur="saveNotes()" style="min-height: 150px; box-shadow: none;"></textarea>
                     <div class="text-end mt-1"><small id="note-status"></small></div>
                 </div>
             </div>
@@ -255,7 +255,7 @@
                             <label class="text-muted">Data</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="text" id="trans-causale" class="form-control" placeholder="Causale" required>
+                            <input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required>
                             <label class="text-muted">Causale</label>
                         </div>
                         <div class="form-floating mb-4">
@@ -289,7 +289,7 @@
                             <label class="text-muted">Giorno Scadenza (1-31)</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="text" id="ric-causale" class="form-control" placeholder="Causale" required>
+                            <input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required>
                             <label class="text-muted">Causale</label>
                         </div>
                         <div class="form-floating mb-4">
@@ -302,6 +302,23 @@
             </div>
         </div>
     </div>
+
+    <datalist id="causali-rapide">
+        <option value="Assicurazione"></option>
+        <option value="Benzina"></option>
+        <option value="Bolletta gas"></option>
+        <option value="Bolletta luce"></option>
+        <option value="Bollo"></option>
+        <option value="Bonifico da"></option>
+        <option value="Bonifico in favore di"></option>
+        <option value="Giroconto"></option>
+        <option value="GPL"></option>
+        <option value="Prelievo banca"></option>
+        <option value="Supermercato"></option>
+        <option value="Tari"></option>
+        <option value="Versamento assegno"></option>
+        <option value="Versamento contanti"></option>
+    </datalist>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
         <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -727,19 +744,39 @@
         }
         
         function confermaTutteCarte() { 
-            let modificate = false; 
-            db.transazioni.forEach(t => { 
-                if (t.sezione === 'carta' && !t.confermato) { 
-                    t.confermato = true; 
-                    modificate = true; 
-                } 
-            }); 
+            let modificate = false;
+            const mode = activeViewMode;
+            const oggi = new Date(); 
+            const mC = oggi.getMonth() + 1; 
+            const aC = oggi.getFullYear();
+            
+            const sA_el = document.getElementById('filter-anno');
+            const sM_el = document.getElementById('filter-mese');
+            let sA = null, sM = null;
+            if (sA_el && sA_el.value) sA = parseInt(sA_el.value);
+            if (sM_el && sM_el.value) sM = parseInt(sM_el.value);
+
+            db.transazioni.forEach(t => {
+                if (t.sezione === 'carta' && !t.confermato) {
+                    const d = new Date(t.data);
+                    if (mode === 'archivio' && sA && sM) {
+                        if (d.getFullYear() === sA && (d.getMonth() + 1) === sM) {
+                            t.confermato = true; modificate = true;
+                        }
+                    } else if (mode === 'corrente') {
+                        if (d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC)) {
+                            t.confermato = true; modificate = true;
+                        }
+                    }
+                }
+            });
+            
             if (modificate) { 
                 saveData(); 
                 renderTable(activeViewMode); 
-                showToast("Tutte le carte confermate!"); 
+                showToast("Operazioni confermate per questa vista!"); 
             } else { 
-                showToast("Niente da confermare"); 
+                showToast("Nessuna operazione da confermare qui."); 
             } 
         }
 
