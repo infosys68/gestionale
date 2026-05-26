@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* FORZATURA TEMA CHIARO FISSO - ELIMINATO OGNI RIFERIMENTO AL DARK MODE PER EVITARE FORZATURE DEL PIXEL */
         :root { 
             --bg-color: #fdfbf7; 
             --text-color: #4a4a4a; 
@@ -64,16 +63,13 @@
         .note-container { background: #fff9c4 !important; border-left: 6px solid #fbc02d !important; border-radius: 15px; color: #5d4037 !important; }
         #note-area { background: transparent !important; color: #5d4037 !important; font-style: italic; }
 
-        /* BLINDATURA INPUT E MODALI - SFONDO BIANCO FISSO PER STRACCIARE I BUG DI CHROME */
         .modal-content { background-color: #ffffff !important; color: #4a4a4a !important; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
         .form-control, .form-select { background-color: #ffffff !important; color: #4a4a4a !important; border: 1px solid #cccccc !important; }
         .form-control:focus, .form-select:focus { background-color: #ffffff !important; color: #4a4a4a !important; border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
         
-        /* FIX DEFINITIVO PER LE LABEL FLOATING ED EVITARE TESTI DIETRO INSERIMENTI */
         .form-floating > .form-control::placeholder { color: transparent !important; }
         .form-floating > label { color: #888888 !important; }
 
-        /* ANCORAGGIO ALTO ANTI-TASTIERA: SBLOCCA IL TASTO SBLOCCA NELL'APP INSTALLATA */
         #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: #fdfbf7; }
     </style>
 </head>
@@ -116,9 +112,11 @@
             <div id="dashboard-view" class="section-container">
                 <div id="main-card-saldo" class="card-saldo">
                     <div id="alert-container"></div>
-                    <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Attuale</div>
+                    <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Prudenziale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
-                    <div class="mt-1 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
+                    <div style="font-size: 0.95rem; font-weight: bold; margin-top: 5px; color: #e0f7fa; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Saldo Contabile: <span id="saldo-contabile">€ 0.00</span></div>
+                    
+                    <div class="mt-2 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
                     <div id="last-update-reg" class="mt-1 opacity-50 small" style="font-size: 0.75rem; font-style: italic;">Dati aggiornati al: --/-- ore --:--</div>
                     
                     <div class="d-flex justify-content-between mt-3">
@@ -463,13 +461,16 @@
         function updateDashboard() {
             let saldo = 0; 
             let totaleCartaMese = 0;
+            let saldoContabile = 0;
             const oggi = new Date(); 
             const mC = oggi.getMonth() + 1; 
             const aC = oggi.getFullYear();
+            const localToday = getLocalDateString();
 
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
+                    
                     if (t.tipo === 'entrata') {
                         saldo += t.importo; 
                     } else {
@@ -479,10 +480,18 @@
                     if (t.sezione === 'carta' && t.tipo === 'uscita' && (dT.getMonth()+1) === mC && dT.getFullYear() === aC) {
                         totaleCartaMese += t.importo;
                     }
+
+                    if (t.data <= localToday) {
+                        if (t.sezione !== 'carta' || t.confermato) {
+                            if (t.tipo === 'entrata') saldoContabile += t.importo;
+                            else saldoContabile -= t.importo;
+                        }
+                    }
                 }
             });
 
             saldo -= (db.fondi.personale + db.fondi.risparmi);
+            
             const mainCard = document.getElementById('main-card-saldo'); 
             const alertContainer = document.getElementById('alert-container'); 
             alertContainer.innerHTML = '';
@@ -495,6 +504,7 @@
             }
 
             document.getElementById('saldo-totale').innerText = "€ " + saldo.toFixed(2);
+            document.getElementById('saldo-contabile').innerText = "€ " + saldoContabile.toFixed(2);
             document.getElementById('dash-carta-mese').innerText = "€ " + totaleCartaMese.toFixed(2);
             document.getElementById('dash-fondo-personale').innerText = "€ " + db.fondi.personale.toFixed(2);
             document.getElementById('dash-fondo-risparmi').innerText = "€ " + db.fondi.risparmi.toFixed(2);
