@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
+        /* FORZATURA TEMA CHIARO FISSO - ELIMINATO OGNI RIFERIMENTO AL DARK MODE PER EVITARE FORZATURE DEL PIXEL */
         :root { 
             --bg-color: #fdfbf7; 
             --text-color: #4a4a4a; 
@@ -61,8 +62,9 @@
         .alert-negativo { background: #fff; color: red; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } .alert-ricorrenti { background: #ff9800; color: #fff; }
 
         .note-container { background: #fff9c4 !important; border-left: 6px solid #fbc02d !important; border-radius: 15px; color: #5d4037 !important; }
-        #note-area { background: transparent !important; color: #5d4037 !important; font-style: italic; }
+        #note-area { background: transparent !important; color: #5d4037 !important; font-style: italic; min-height: 150px; }
 
+        /* BLINDATURA INPUT E MODALI - SFONDO BIANCO FISSO PER STRACCIARE I BUG DI CHROME */
         .modal-content { background-color: #ffffff !important; color: #4a4a4a !important; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
         .form-control, .form-select { background-color: #ffffff !important; color: #4a4a4a !important; border: 1px solid #cccccc !important; }
         .form-control:focus, .form-select:focus { background-color: #ffffff !important; color: #4a4a4a !important; border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
@@ -70,6 +72,7 @@
         .form-floating > .form-control::placeholder { color: transparent !important; }
         .form-floating > label { color: #888888 !important; }
 
+        /* ANCORAGGIO ALTO ANTI-TASTIERA: SBLOCCA IL TASTO SBLOCCA NELL'APP INSTALLATA */
         #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: #fdfbf7; }
     </style>
 </head>
@@ -114,7 +117,7 @@
                     <div id="alert-container"></div>
                     <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Prudenziale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
-                    <div style="font-size: 0.95rem; font-weight: bold; margin-top: 5px; color: #e0f7fa; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Saldo Contabile: <span id="saldo-contabile">€ 0.00</span></div>
+                    <div class="mt-1 opacity-95 fw-bold" style="font-size: 0.95rem; color: #e0f7fa; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Saldo Contabile: <span id="saldo-contabile">€ 0.00</span></div>
                     
                     <div class="mt-2 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
                     <div id="last-update-reg" class="mt-1 opacity-50 small" style="font-size: 0.75rem; font-style: italic;">Dati aggiornati al: --/-- ore --:--</div>
@@ -128,7 +131,7 @@
 
                 <div class="note-container p-3 rounded-4 shadow-sm mb-4">
                     <h6 class="fw-bold mb-2">📌 Appunti Veloci</h6>
-                    <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." rows="6" onblur="saveNotes()" style="min-height: 150px; box-shadow: none;"></textarea>
+                    <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." rows="6" onblur="saveNotes()" style="box-shadow: none;"></textarea>
                     <div class="text-end mt-1"><small id="note-status"></small></div>
                 </div>
             </div>
@@ -681,6 +684,7 @@
                 });
             }
             
+            let htmlRighe = '';
             dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; 
                 let az = '';
@@ -694,13 +698,14 @@
                     }
                 }
                 
-                tbody.innerHTML += `<tr class="${isFutura ? 'riga-futura' : ''}">
+                htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}</td>
                     <td class="text-end ${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td>
                     <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
                 </tr>`;
             });
+            tbody.innerHTML = htmlRighe;
         }
 
         function conf(id) { 
@@ -762,9 +767,8 @@
             
             const sA_el = document.getElementById('filter-anno');
             const sM_el = document.getElementById('filter-mese');
-            let sA = null, sM = null;
-            if (sA_el && sA_el.value) sA = parseInt(sA_el.value);
-            if (sM_el && sM_el.value) sM = parseInt(sM_el.value);
+            let sA = sA_el ? parseInt(sA_el.value) : null;
+            let sM = sM_el ? parseInt(sM_el.value) : null;
 
             db.transazioni.forEach(t => {
                 if (t.sezione === 'carta' && !t.confermato) {
@@ -793,9 +797,11 @@
         function renderRicorrenti() { 
             const tbody = document.getElementById('ricorrenti-tbody'); 
             tbody.innerHTML = ''; 
+            let htmlRighe = '';
             [...db.ricorrenti].reverse().forEach(r => { 
-                tbody.innerHTML += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
+                htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
             }); 
+            tbody.innerHTML = htmlRighe;
             checkRicorrentiStatus(); 
         }
         
