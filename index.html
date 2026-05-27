@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestionale Pixel</title>
+    <title>Titanium Pixel</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,52 +12,97 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --bg-color: #fdfbf7; --text-color: #4a4a4a; --card-bg: rgba(255,255,255,0.85); --border-color: #ddd; }
-        body { background-color: var(--bg-color) !important; font-family: 'Segoe UI', sans-serif; color: var(--text-color) !important; padding-bottom: 90px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
+        /* TEMA MIDNIGHT ENTERPRISE (Ottimizzato per OLED Pixel) */
+        :root {
+            color-scheme: dark;
+            --bg-main: #090d16;
+            --bg-card: #111827;
+            --bg-input: #1f2937;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        body { background-color: var(--bg-main) !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-main) !important; padding-bottom: 90px; transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
-        .entrata { color: #28a745 !important; font-weight: bold; }
-        .uscita { color: #dc3545 !important; font-weight: bold; }
-        .riga-futura { background-color: #f1f3f5 !important; opacity: 0.7; border-left: 3px solid #0d6efd; }
-        .bg-conto { background-color: #e3f2fd !important; border: 2px solid #a1c4fd; }
-        .bg-carta { background-color: #fff0f3 !important; border: 2px solid #ff9a9e; }
-        .bg-ricorrenti { background-color: #fff9e6 !important; border: 2px solid #f6d365; }
-        .bg-fondi { background-color: #f3e5f5 !important; border: 2px solid #e0c3fc; }
-        .section-container { animation: fadeIn .25s ease; padding: 15px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .dropdown-menu { background-color: var(--card-bg); border-color: var(--border-color); }
-        .dropdown-item { color: var(--text-color); }
-        .table { --bs-table-bg: transparent; color: var(--text-color) !important; }
-        .table td, .table th { border-color: var(--border-color) !important; color: var(--text-color) !important; }
-        .table-light th { background-color: #f1f3f5 !important; color: var(--text-color) !important; }
-        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #0d6efd, #0056d2); color: white; border: none; font-size: 28px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; }
+
+        /* OVERRIDE BOOTSTRAP PER TEMA SCURO */
+        .bg-white, .card, .table-container-white, .note-container, .section-container, .dropdown-menu { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; }
+        .form-control, .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+        .form-control:focus, .form-select:focus { border-color: var(--accent-blue) !important; box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important; }
+        .modal-content { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; border-radius: 24px; }
+        .modal-header { border-bottom: 1px solid var(--border-color); }
+        .form-floating > label { color: var(--text-muted) !important; }
+        
+        .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
+        .table td, .table th { border-color: var(--border-color) !important; color: var(--text-main) !important; }
+        .table-light th { background-color: var(--bg-input) !important; color: var(--text-muted) !important; }
+        
+        .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
+        .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
+
+        .dropdown-item { color: var(--text-main) !important; transition: 0.2s; }
+        .dropdown-item:hover { background-color: rgba(255,255,255,0.05) !important; }
+        
+        /* MENU DROPDOWN SOFT DARK */
+        .bg-conto { background-color: rgba(56, 189, 248, 0.05) !important; border-left: 3px solid var(--accent-blue); border:none; }
+        .bg-carta { background-color: rgba(251, 191, 36, 0.05) !important; border-left: 3px solid #fbbf24; border:none; }
+        .bg-ricorrenti { background-color: rgba(245, 158, 11, 0.05) !important; border-left: 3px solid var(--accent-orange); border:none; }
+        .bg-fondi { background-color: rgba(16, 185, 129, 0.05) !important; border-left: 3px solid var(--accent-green); border:none; }
+
+        /* COLORI TESTO PERSONALIZZATI */
+        .entrata { color: var(--accent-green) !important; font-weight: bold; }
+        .uscita { color: var(--accent-red) !important; font-weight: bold; }
+        .riga-futura { background-color: rgba(56, 189, 248, 0.03) !important; border-left: 3px solid var(--accent-blue) !important; }
+        .badge-futura { font-size: 0.7rem; background-color: var(--accent-blue); color: #000; padding: 2px 6px; border-radius: 5px; margin-left: 5px; text-transform: uppercase; font-weight: 700; }
+
+        /* FAB BUTTON BLINDATO */
+        .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), #0284c7); color: #000; border: none; font-size: 28px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4); z-index: 999; transition: .2s; display: flex; align-items: center; justify-content: center; font-weight: 800; }
         .fab-btn:active { transform: scale(.92); }
-        .top-header { position: sticky; top: 0; background: var(--bg-color); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .card-saldo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 20px; padding: 25px 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; }
-        .valore-saldo { font-size: 2.8rem; font-weight: 900; margin: 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
-        .box-metrica { background: rgba(0, 0, 0, 0.15); border-radius: 12px; padding: 10px; flex: 1; font-size: 0.8rem; margin: 0 5px; }
-        .table-container-white { background: rgba(255,255,255,0.95); border-radius: 15px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .alert-negativo, .alert-ricorrenti { padding: 4px 12px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 8px; }
-        .alert-negativo { background: #fff; color: red; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } .alert-ricorrenti { background: #ff9800; color: #fff; }
-        .note-container { background: #fff9c4 !important; border-left: 6px solid #fbc02d !important; border-radius: 15px; color: #5d4037 !important; }
-        #note-area { background: transparent !important; color: #5d4037 !important; font-style: italic; min-height: 150px; }
-        .modal-content { background-color: #ffffff !important; color: #4a4a4a !important; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
-        .form-control, .form-select { background-color: #ffffff !important; color: #4a4a4a !important; border: 1px solid #cccccc !important; }
-        .form-control:focus, .form-select:focus { background-color: #ffffff !important; color: #4a4a4a !important; border-color: #0d6efd !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
-        .form-floating > .form-control::placeholder { color: transparent !important; }
-        .form-floating > label { color: #888888 !important; }
-        #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: #fdfbf7; }
+        
+        /* HEADER MOBILE */
+        .top-header { position: sticky; top: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        
+        /* SCHEDA SALDO ENTERPRISE */
+        .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+        .card-saldo::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+        .valore-saldo { font-size: 3rem; font-weight: 800; margin: 0; letter-spacing: -1px; }
+        
+        .box-metrica { background: rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 12px; flex: 1; font-size: 0.8rem; margin: 0 5px; border: 1px solid var(--border-color); }
+        
+        /* ALERTS E NOTE */
+        .alert-negativo, .alert-ricorrenti { padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; border: 1px solid transparent; }
+        .alert-negativo { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: var(--accent-red); animation: pulse 2s infinite; } 
+        .alert-ricorrenti { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border-color: var(--accent-orange); }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .note-container { border-left: 6px solid var(--accent-orange) !important; border-radius: 20px; padding: 20px; }
+        #note-area { background: var(--bg-input) !important; color: var(--text-main) !important; font-style: italic; min-height: 150px; border-radius: 12px; padding: 12px; border: 1px solid var(--border-color) !important; }
+        #note-area:focus { border-color: var(--accent-orange) !important; outline: none; }
+
+        /* SCHERMATA LOGIN */
+        #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: var(--bg-main); }
+        .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); border: 1px solid var(--border-color); width: 90%; max-width: 350px; }
+        
+        .table-container-white { border-radius: 20px; padding: 15px; }
+        .section-container { padding: 15px 5px; }
+        .icon-svg { width: 16px; height: 16px; fill: currentColor; display: inline-block; vertical-align: middle; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <div class="p-4 rounded-4 shadow-lg bg-white" style="border: 1px solid #ddd; text-align: center; width: 90%; max-width: 350px;">
-            <div style="font-size: 4rem;">📱</div>
-            <h2 class="mb-4 fw-bold text-dark">Gestionale App</h2>
-            <input type="password" id="password-input" class="form-control form-control-lg mb-3 text-center fw-bold" placeholder="PIN" inputmode="numeric" style="letter-spacing: 5px; box-shadow: none;" onfocus="this.style.borderColor='#0d6efd'" onblur="this.style.borderColor='#666666'" onkeydown="if(event.key==='Enter') checkPassword()">
+        <div class="login-box">
+            <svg style="width: 48px; height: 48px; color: var(--accent-blue); margin-bottom: 16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+            <h2 class="mb-4 fw-bold text-white">Titanium Mobile</h2>
+            <input type="password" id="password-input" class="form-control form-control-lg mb-4 text-center fw-bold pin-input" placeholder="•••••" inputmode="numeric" style="letter-spacing: 5px; box-shadow: none;" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
-            <div id="login-error" class="text-danger mt-3 hidden fw-bold">❌ PIN errato.</div>
+            <div id="login-error" class="text-danger mt-3 hidden fw-bold" style="font-size: 0.85rem;">❌ PIN errato.</div>
         </div>
     </div>
 
@@ -65,17 +110,19 @@
         
         <div class="top-header">
             <div class="dropdown">
-                <button class="btn btn-dark btn-sm dropdown-toggle fw-bold rounded-pill px-3 shadow-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.9rem;">🏛️ Sezioni</button>
-                <ul class="dropdown-menu shadow-lg border-0 rounded-4 mt-2 p-2" aria-labelledby="dropdownMenuButton" style="min-width: 220px;">
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-conto text-center" href="#" onclick="naviga('conto')" style="color: #000 !important;">Gestione Conto</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-carta text-center" href="#" onclick="naviga('carta')" style="color: #000 !important;">Carta di Credito</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-ricorrenti text-center" href="#" onclick="naviga('ricorrenti')" style="color: #000 !important;">Pagamenti Ricorrenti</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-0 rounded-3 bg-fondi text-center" href="#" onclick="naviga('fondi')" style="color: #000 !important;">Gestione Fondi</a></li>
+                <button class="btn btn-dark btn-sm dropdown-toggle fw-bold rounded-pill px-3 shadow-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem; border: 1px solid var(--border-color); background: var(--bg-input);">
+                    <svg class="icon-svg me-1" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg> Menu
+                </button>
+                <ul class="dropdown-menu shadow-lg mt-2 p-2" aria-labelledby="dropdownMenuButton" style="min-width: 220px;">
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-conto text-center" href="#" onclick="naviga('conto')">Gestione Conto</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-carta text-center" href="#" onclick="naviga('carta')">Carta di Credito</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-ricorrenti text-center" href="#" onclick="naviga('ricorrenti')">Pagamenti Ricorrenti</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-0 rounded-3 bg-fondi text-center" href="#" onclick="naviga('fondi')">Gestione Fondi</a></li>
                 </ul>
             </div>
             <div class="d-flex gap-1 align-items-center">
-                <button onclick="naviga('home')" class="btn btn-success btn-sm rounded-pill px-2 fw-bold shadow-sm">🏠 Home</button>
-                <button onclick="naviga('backup')" class="btn btn-outline-secondary btn-sm rounded-pill px-2 fw-bold shadow-sm">⚙️ Dati</button>
+                <button onclick="naviga('home')" class="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid var(--accent-green);">Home</button>
+                <button onclick="naviga('backup')" class="btn btn-outline-info btn-sm rounded-pill px-2 fw-bold shadow-sm" style="border-color: var(--border-color);">⚙️ Dati</button>
                 <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm">🚪 Esci</button>
             </div>
         </div>
@@ -85,44 +132,46 @@
             <div id="dashboard-view" class="section-container">
                 <div id="main-card-saldo" class="card-saldo">
                     <div id="alert-container"></div>
-                    <div style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-size: 0.8rem;">Saldo Prudenziale</div>
+                    <div style="text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); font-size: 0.75rem; font-weight: 700;">Saldo Prudenziale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
-                    <div class="mt-1 opacity-95 fw-bold" style="font-size: 0.95rem; color: #e0f7fa; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Saldo Contabile: <span id="saldo-contabile">€ 0.00</span></div>
+                    <div class="mt-2 fw-bold" style="font-size: 0.9rem; color: var(--text-muted);">Saldo Contabile: <span id="saldo-contabile" style="color: var(--accent-blue);">€ 0.00</span></div>
                     
-                    <div class="mt-2 opacity-75 fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.78rem;">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
-                    <div id="last-update-reg" class="mt-1 opacity-50 small" style="font-size: 0.75rem; font-style: italic;">Dati aggiornati al: --/-- ore --:--</div>
+                    <div class="mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                        <div class="fw-bold" style="letter-spacing: 0.5px; font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">IBAN: IT33 E030 5801 6041 0057 •••• •••</div>
+                        <div id="last-update-reg" class="mt-1 small" style="font-size: 0.7rem; color: var(--text-muted);">Dati aggiornati al: --/-- ore --:--</div>
+                    </div>
                     
-                    <div class="d-flex justify-content-between mt-3">
-                        <div class="box-metrica"><small class="d-block opacity-75">CARTA</small><span id="dash-carta-mese" class="fw-bold text-warning">€ 0.00</span></div>
-                        <div class="box-metrica"><small class="d-block opacity-75">PERSONALE</small><span id="dash-fondo-personale" class="fw-bold text-info">€ 0.00</span></div>
-                        <div class="box-metrica"><small class="d-block opacity-75">RISPARMI</small><span id="dash-fondo-risparmi" class="fw-bold text-info">€ 0.00</span></div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">CARTA</small><span id="dash-carta-mese" class="fw-bold" style="color: #fbbf24; font-size: 1rem;">€ 0.00</span></div>
+                        <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">PERSONALE</small><span id="dash-fondo-personale" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
+                        <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">RISPARMI</small><span id="dash-fondo-risparmi" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
                     </div>
                 </div>
 
-                <div class="note-container p-3 rounded-4 shadow-sm mb-4">
-                    <h6 class="fw-bold mb-2">📌 Appunti Veloci</h6>
-                    <textarea id="note-area" class="form-control border-0" placeholder="Scrivi qui..." rows="6" onblur="saveNotes()" style="box-shadow: none;"></textarea>
-                    <div class="text-end mt-1"><small id="note-status"></small></div>
+                <div class="note-container mb-4">
+                    <h6 class="fw-bold mb-2" style="color: var(--accent-orange);">📌 Appunti Veloci</h6>
+                    <textarea id="note-area" placeholder="Scrivi qui..." rows="5" onblur="saveNotes()"></textarea>
+                    <div class="text-end mt-1"><small id="note-status" style="color: var(--accent-orange);"></small></div>
                 </div>
             </div>
 
             <div id="transazioni-section" class="section-container hidden">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 id="transazioni-title" class="fw-bold m-0 text-dark">...</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <h3 id="transazioni-title" class="fw-bold m-0 text-white">...</h3>
                     <div class="d-flex gap-2">
                         <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Confirm</button>
-                        <button onclick="exportToPDF('transazioni')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                        <button onclick="exportToPDF('transazioni')" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold" style="border-color: var(--border-color);">📄 PDF</button>
                     </div>
                 </div>
                 <div class="table-container-white">
-                    <ul class="nav nav-pills nav-fill mb-3" id="transazioni-tabs" style="font-size: 0.9rem;">
-                        <li class="nav-item"><a class="nav-link active rounded-pill py-1" href="#" onclick="renderTable('corrente')">Corrente</a></li>
-                        <li class="nav-item"><a class="nav-link rounded-pill py-1" href="#" onclick="renderTable('archivio')">Archivio</a></li>
+                    <ul class="nav nav-pills nav-fill mb-3" id="transazioni-tabs" style="font-size: 0.85rem;">
+                        <li class="nav-item"><a class="nav-link active py-2" href="#" onclick="renderTable('corrente')">Corrente</a></li>
+                        <li class="nav-item"><a class="nav-link py-2" href="#" onclick="renderTable('archivio')">Archivio</a></li>
                     </ul>
                     <div id="archivio-filters" class="mb-3 hidden">
                         <div class="row g-2 mb-2">
-                            <div class="col-6"><select id="filter-mese" class="form-select form-select-sm" onchange="renderTable('archivio')"><option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option><option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option><option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option></select></div>
-                            <div class="col-6"><select id="filter-anno" class="form-select form-select-sm" onchange="renderTable('archivio')"></select></div>
+                            <div class="col-6"><select id="filter-mese" class="form-select form-select-sm rounded-pill" onchange="renderTable('archivio')"><option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option><option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option><option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option></select></div>
+                            <div class="col-6"><select id="filter-anno" class="form-select form-select-sm rounded-pill" onchange="renderTable('archivio')"></select></div>
                         </div>
                         <input type="text" id="search-archivio" class="form-control form-control-sm rounded-pill" placeholder="🔍 Cerca causale..." onkeyup="renderTable('archivio')">
                     </div>
@@ -131,41 +180,41 @@
             </div>
 
             <div id="ricorrenti-section" class="section-container hidden">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="fw-bold m-0 text-dark">🔁 Ricorrenti</h3>
-                    <button onclick="exportToPDF('ricorrenti')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <h3 class="fw-bold m-0" style="color: var(--accent-orange);">🔁 Ricorrenti</h3>
+                    <button onclick="exportToPDF('ricorrenti')" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold" style="border-color: var(--border-color);">📄 PDF</button>
                 </div>
-                <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning mb-3 w-100 rounded-pill fw-bold">⚡ Inserisci tutti con 1 click</button>
-                <button id="btn-nuovo-ric" onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4">+ Configura Nuovo</button>
+                <button id="btn-inserisci-ricorrenti" onclick="inserisciTuttiRicorrenti()" class="btn btn-warning text-dark mb-3 w-100 rounded-pill fw-bold">⚡ Inserisci tutti con 1 click</button>
+                <button id="btn-nuovo-ric" onclick="apriModalRicorrente()" class="btn btn-outline-primary w-100 rounded-pill fw-bold mb-4" style="border-color: var(--accent-blue); color: var(--accent-blue);">+ Configura Nuovo</button>
                 <div class="table-container-white"><div class="table-responsive"><table class="table table-sm align-middle" style="font-size: 0.85rem;"><tbody id="ricorrenti-tbody"></tbody></table></div></div>
             </div>
 
             <div id="fondi-section" class="section-container hidden">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="fw-bold m-0 text-dark">💰 Gestione Fondi</h3>
-                    <button onclick="exportToPDF('fondi')" class="btn btn-dark btn-sm rounded-pill fw-bold">📄 PDF</button>
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <h3 class="fw-bold m-0" style="color: var(--accent-green);">💰 Gestione Fondi</h3>
+                    <button onclick="exportToPDF('fondi')" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold" style="border-color: var(--border-color);">📄 PDF</button>
                 </div>
                 
-                <div class="card p-3 shadow-sm border-0 rounded-4 mb-3 bg-white border">
+                <div class="card p-4 shadow-sm border-0 rounded-4 mb-4 border">
                     <h5 class="text-success fw-bold">Fondo Personale</h5><h2 id="tot-personale-sec" class="text-success mb-3 fw-bold">€ 0.00</h2>
-                    <div class="input-group mb-2"><input type="number" id="fondo-personale-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi..."><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success btn-sm px-3 fw-bold">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control form-control-sm" placeholder="Preleva..."><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger btn-sm px-3 fw-bold">X</button></div>
+                    <div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success px-4 fw-bold">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
 
-                <div class="card p-3 shadow-sm border-0 rounded-4 bg-white border">
-                    <h5 class="text-primary fw-bold">Fondo Risparmi</h5><h2 id="tot-risparmi-sec" class="text-primary mb-3 fw-bold">€ 0.00</h2>
-                    <div class="input-group mb-2"><input type="number" id="fondo-risparmi-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi..."><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary btn-sm px-3 fw-bold">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control form-control-sm" placeholder="Preleva..."><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger btn-sm px-3 fw-bold">X</button></div>
+                <div class="card p-4 shadow-sm border-0 rounded-4 mb-3 border">
+                    <h5 class="fw-bold" style="color: var(--accent-blue);">Fondo Risparmi</h5><h2 id="tot-risparmi-sec" class="mb-3 fw-bold" style="color: var(--accent-blue);">€ 0.00</h2>
+                    <div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary px-4 fw-bold text-dark">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
             </div>
 
             <div id="backup-section" class="section-container hidden">
-                <h3 class="mb-4 fw-bold text-dark">⚙️ Archivio Dati</h3>
-                <div class="card p-3 shadow-sm border-0 rounded-4 bg-white border">
-                    <h5>💾 Esporta Database</h5><p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
-                    <button onclick="esportaFileBackup()" class="btn btn-primary w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button><hr>
-                    <h6 class="mt-2 text-dark">Ripristina da File Salvato</h6>
-                    <input type="file" id="file-import" class="form-control form-control-sm mb-3" accept=".json">
+                <h3 class="mb-4 fw-bold text-white px-2">⚙️ Archivio Dati</h3>
+                <div class="card p-4 shadow-sm border-0 rounded-4 border">
+                    <h5 style="color: var(--accent-blue);">💾 Esporta Database</h5><p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
+                    <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button><hr style="border-color: var(--border-color);">
+                    <h6 class="mt-2 text-white">Ripristina da File Salvato</h6>
+                    <input type="file" id="file-import" class="form-control mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
                 </div>
             </div>
@@ -176,16 +225,16 @@
 
     <div class="modal fade" id="modalTransazione" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold text-dark" id="modal-title-trans">Aggiungi Movimento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold" id="modal-title-trans">Aggiungi Movimento</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="form-transazione" onsubmit="addTransaction(event)">
                         <input type="hidden" id="trans-id">
-                        <div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label class="text-muted">Tipo Movimento</label></div>
-                        <div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label class="text-muted">Data</label></div>
-                        <div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label class="text-muted">Causale</label></div>
-                        <div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required><label class="text-muted">Importo (€)</label></div>
-                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">Salva Movimento</button>
+                        <div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div>
+                        <div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div>
+                        <div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div>
+                        <div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
+                        <button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button>
                     </form>
                 </div>
             </div>
@@ -194,17 +243,17 @@
 
     <div class="modal fade" id="modalRicorrente" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold text-dark">Configura Ricorrente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold" style="color: var(--accent-orange);">Configura Ricorrente</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="form-ricorrenti" onsubmit="addRicorrente(event)">
                         <input type="hidden" id="ric-id">
-                        <div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label class="text-muted">Tipo</label></div>
-                        <div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label class="text-muted">Competenza</label></div>
-                        <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" required><label class="text-muted">Giorno Scadenza (1-31)</label></div>
-                        <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label class="text-muted">Causale</label></div>
-                        <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label class="text-muted">Importo (€)</label></div>
-                        <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold text-dark shadow-sm">Salva Configurazione</button>
+                        <div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div>
+                        <div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div>
+                        <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" required><label>Giorno Scadenza (1-31)</label></div>
+                        <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div>
+                        <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
+                        <button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button>
                     </form>
                 </div>
             </div>
@@ -215,9 +264,9 @@
         <option value="Assicurazione"></option><option value="Benzina"></option><option value="Bolletta gas"></option><option value="Bolletta luce"></option><option value="Bollo"></option><option value="Bonifico da"></option><option value="Bonifico in favore di"></option><option value="Giroconto"></option><option value="GPL"></option><option value="Prelievo banca"></option><option value="Supermercato"></option><option value="Tari"></option><option value="Versamento assegno"></option><option value="Versamento contanti"></option>
     </datalist>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
-        <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex"><div class="toast-body fw-bold" id="toast-message">Operazione completata</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050; padding-bottom: 90px !important;">
+        <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important;">
+            <div class="d-flex"><div class="toast-body fw-bold" id="toast-message" style="color: var(--accent-blue);">Operazione completata</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
         </div>
     </div>
 
@@ -275,8 +324,8 @@
 
             saldo -= (db.fondi.personale + db.fondi.risparmi);
             const mainCard = document.getElementById('main-card-saldo'); const alertContainer = document.getElementById('alert-container'); alertContainer.innerHTML = '';
-            if (saldo < 0) { mainCard.style.background = 'linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%)'; alertContainer.innerHTML = '<div class="alert-negativo">⚠️ CONTO IN NEGATIVO</div>'; } 
-            else { mainCard.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; }
+            if (saldo < 0) { mainCard.style.background = 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'; mainCard.style.borderColor = 'var(--accent-red)'; alertContainer.innerHTML = '<div class="alert-negativo">⚠️ CONTO IN NEGATIVO</div>'; } 
+            else { mainCard.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'; mainCard.style.borderColor = 'var(--border-color)'; }
 
             document.getElementById('saldo-totale').innerText = "€ " + saldo.toFixed(2);
             document.getElementById('saldo-contabile').innerText = "€ " + saldoContabile.toFixed(2);
@@ -428,7 +477,7 @@
             if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } 
             else if (type === 'ricorrenti') { head = [['Competenza e Giorno', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText, cols[2].innerText]); } }); } 
             else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); } }); } 
-            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [102, 126, 234] } }); doc.save("Report_" + type + ".pdf"); 
+            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); 
         }
         
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += '<option value="' + i + '">' + i + '</option>'; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2, '0'); }
