@@ -197,14 +197,14 @@
                 
                 <div class="card p-4 shadow-sm border-0 rounded-4 mb-4 border">
                     <h5 class="text-success fw-bold">Fondo Personale</h5><h2 id="tot-personale-sec" class="text-success mb-3 fw-bold">€ 0.00</h2>
-                    <div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi..."><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success px-4 fw-bold">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control form-control-sm" placeholder="Preleva..."><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
+                    <div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success px-4 fw-bold">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
 
                 <div class="card p-4 shadow-sm border-0 rounded-4 mb-3 border">
                     <h5 class="fw-bold" style="color: var(--accent-blue);">Fondo Risparmi</h5><h2 id="tot-risparmi-sec" class="mb-3 fw-bold" style="color: var(--accent-blue);">€ 0.00</h2>
-                    <div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control form-control-sm" placeholder="Aggiungi..."><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary px-4 fw-bold text-dark" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control form-control-sm" placeholder="Preleva..."><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
+                    <div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary px-4 fw-bold text-dark" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
             </div>
 
@@ -402,4 +402,87 @@
         }
 
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
-        function post(id) { const x = db.transazioni.find(x => x.id === id); let d = new Date(x
+        function post(id) { const x = db.transazioni.find(x => x.id === id); let d = new Date(x.data); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.toISOString().split('T')[0]; x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
+        function delT(id) { 
+            if (confirm('Eliminare operazione?')) { 
+                const t = db.transazioni.find(x => x.id === id);
+                if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; }
+                db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); 
+            } 
+        }
+        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        
+        function confermaTutteCarte() { 
+            let modificate = false; const mode = activeViewMode; const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear();
+            const sA_el = document.getElementById('filter-anno'); const sM_el = document.getElementById('filter-mese');
+            let sA = sA_el ? parseInt(sA_el.value) : null; let sM = sM_el ? parseInt(sM_el.value) : null;
+            db.transazioni.forEach(t => {
+                if (t.sezione === 'carta' && !t.confermato) {
+                    const d = new Date(t.data);
+                    if (mode === 'archivio' && sA && sM) { if (d.getFullYear() === sA && (d.getMonth() + 1) === sM) { t.confermato = true; modificate = true; } } 
+                    else if (mode === 'corrente') { if (d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC)) { t.confermato = true; modificate = true; } }
+                }
+            });
+            if (modificate) { saveData(); renderTable(activeViewMode); showToast("Operazioni confermate!"); } else showToast("Nessuna operazione da confermare qui."); 
+        }
+
+        function renderRicorrenti() { 
+            const tbody = document.getElementById('ricorrenti-tbody'); let htmlRighe = ''; 
+            [...db.ricorrenti].reverse().forEach(r => { htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); 
+            tbody.innerHTML = htmlRighe; checkRicorrentiStatus(); 
+        }
+        
+        function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function addRicorrente(event) { 
+            event.preventDefault(); const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value); 
+            if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; } 
+            const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
+            if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } else db.ricorrenti.push(r); 
+            saveData(); renderRicorrenti(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); showToast("Ricorrente salvato"); 
+        }
+        function delR(id) { if (confirm('Eliminare ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRicorrenti(); showToast("Eliminato"); } }
+        
+        function inserisciTuttiRicorrenti() { 
+            const oggi = new Date(); let ins = 0; const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const meseCorrenteFirma = aC + "-" + mC.toString().padStart(2, '0'); 
+            db.ricorrenti.forEach(r => { 
+                let m = mC; let y = aC; if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } } 
+                let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
+                const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
+                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
+            }); 
+            if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
+        }
+        
+        function modificaFondi(tipoFondo, azione) { 
+            const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); const valore = parseFloat(input.value); 
+            if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); 
+            if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
+            else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
+            input.value = ''; saveData(); showToast("Fondi aggiornati"); 
+        }
+        
+        function esportaFileBackup() { 
+            const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; 
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); 
+        }
+        
+        function importaFileBackup() { 
+            const f = document.getElementById('file-import'); if (!f.files[0]) return showToast("⚠️ Seleziona un file!"); 
+            const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(() => { location.reload(); }, 1000); } catch(err) { showToast("⚠️ File JSON non valido"); } }; r.readAsText(f.files[0]); 
+        }
+        
+        function exportToPDF(type) { 
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); let head = [['Data', 'Causale', 'Importo']]; let body = []; 
+            if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } 
+            else if (type === 'ricorrenti') { head = [['Competenza e Giorno', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText, cols[2].innerText]); } }); } 
+            else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); } }); } 
+            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); 
+        }
+        
+        function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += '<option value="' + i + '">' + i + '</option>'; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2, '0'); }
+        
+        window.addEventListener('beforeunload', function (e) { if (dataChanged) { e.preventDefault(); e.returnValue = 'Hai modifiche non caricate. Usa il tasto "Salva su Drive" per sincronizzarle.'; } });
+    </script>
+</body>
+</html>
