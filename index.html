@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* TEMA MIDNIGHT ENTERPRISE (OLED Pixel) */
+        /* TEMA MIDNIGHT ENTERPRISE (Ottimizzato per OLED Pixel) */
         :root {
             color-scheme: dark;
             --bg-main: #090d16;
@@ -46,7 +46,7 @@
         }
         
         .form-control, .form-select { 
-            background-color: var(--bg-input) !important; 
+            background-color: #1f2937 !important; 
             border: 1px solid var(--border-color) !important; 
             color: var(--text-main) !important; 
         }
@@ -69,7 +69,7 @@
         
         .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
         .table td, .table th { border-color: var(--border-color) !important; color: var(--text-main) !important; }
-        .table-light th { background-color: var(--bg-input) !important; color: var(--text-muted) !important; }
+        .table-light th { background-color: #1f2937 !important; color: var(--text-muted) !important; }
         
         .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
         .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
@@ -230,19 +230,16 @@
             </div>
 
             <div id="backup-section" class="section-container hidden">
-                <h3 class="mb-4 fw-bold text-white px-2">⚙️ Archivio Dati</h3>
-                <div class="card p-4 shadow-sm border-0 rounded-4 border">
-                    <h5 style="color: var(--accent-blue);">💾 Esporta Database</h5><p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
-                    <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button><hr style="border-color: var(--border-color);">
+                <h3 class="mb-4 fw-bold text-white px-2">⚙️ Dati e Sincronizzazione</h3>
+                
+                <div class="card p-4 shadow-sm border-0 rounded-4 border mb-4">
+                    <h5 style="color: var(--accent-blue);">💾 Esporta Database</h5>
+                    <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
+                    <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
+                    <hr style="border-color: var(--border-color);">
                     <h6 class="mt-2 text-white">Ripristina da File Salvato</h6>
                     <input type="file" id="file-import" class="form-control mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
-                </div>
-
-                <div id="box-archiviazione" class="card p-4 shadow-sm border-0 rounded-4 border hidden mt-4" style="border-left: 5px solid var(--accent-orange) !important;">
-                    <h5 class="fw-bold mb-3" style="color: var(--accent-orange);">📦 Chiusura di Bilancio</h5>
-                    <p class="text-muted small">Il sistema ha rilevato movimenti vecchi nel tuo database locale.</p>
-                    <button id="btn-esegui-archiviazione" onclick="eseguiArchiviazione()" class="btn btn-warning fw-bold w-100 mt-2 text-dark">Avviso Pulizia Storico</button>
                 </div>
             </div>
         </div>
@@ -292,7 +289,7 @@
     </datalist>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050; padding-bottom: 90px !important;">
-        <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background-color: #1f2937 !important; border: 1px solid var(--border-color) !important;">
+        <div id="main-toast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important;">
             <div class="d-flex">
                 <div class="toast-body fw-bold" id="toast-message" style="color: var(--accent-blue);">Operazione completata</div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -486,7 +483,6 @@
             }
             
             checkRicorrentiStatus();
-            checkArchiviazioneFineAnno(aC, mC); // Controllo per l'avviso di marzo
         }
 
         function checkRicorrentiStatus() {
@@ -509,27 +505,6 @@
                     alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div>'; 
                 }
             }
-        }
-
-        // FUNZIONE ARCHIVIAZIONE FIXATA PER PIXEL (NO SERVER FETCH, SOLO AVVISO)
-        function checkArchiviazioneFineAnno(annoCorrente, meseCorrente) {
-            const limitYear = annoCorrente - 1;
-            const vecchieTransazioni = db.transazioni.filter(t => new Date(t.data).getFullYear() <= limitYear);
-            const boxArchiviazione = document.getElementById('box-archiviazione');
-            
-            if (boxArchiviazione) {
-                if (meseCorrente >= 3 && vecchieTransazioni.length > 0) {
-                    boxArchiviazione.classList.remove('hidden');
-                    document.getElementById('btn-esegui-archiviazione').innerText = `⚠️ Richiesta Pulizia Storico ${limitYear}`;
-                } else {
-                    boxArchiviazione.classList.add('hidden');
-                }
-            }
-        }
-
-        function eseguiArchiviazione() {
-            alert(`OPERAZIONE DA PC RICHIESTA\n\nL'app ha rilevato vecchi movimenti dell'anno scorso.\n\nPer garantire la sicurezza dei file offline:\n1. Apri il gestionale dal PC di casa.\n2. Esegui la 'Chiusura di Bilancio' dal PC.\n3. Esporta il nuovo data.json dal PC e importalo qui sul Pixel per riallineare i dispositivi.`);
-            document.getElementById('box-archiviazione').classList.add('hidden');
         }
 
         function naviga(sezione) {
@@ -684,7 +659,6 @@
             renderTable(activeViewMode); 
         }
 
-        // CORREZIONE BUG FUSO ORARIO SUL POSTICIPO SPESA
         function post(id) { 
             const x = db.transazioni.find(x => x.id === id); 
             let p = x.data.split('-');
