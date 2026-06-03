@@ -171,7 +171,7 @@
                 </ul>
             </div>
             <div class="d-flex gap-1 align-items-center">
-                <button id="btn-home-nav" onclick="naviga('home')" class="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid var(--accent-green);">Home</button>
+                <button onclick="naviga('home')" class="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid var(--accent-green);">Home</button>
                 <button onclick="naviga('backup')" class="btn btn-outline-info btn-sm rounded-pill px-2 fw-bold shadow-sm" style="border-color: var(--border-color);">⚙️ Dati</button>
                 <button id="btn-esci" onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm">🚪 Esci</button>
             </div>
@@ -270,7 +270,8 @@
                     <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
                     <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica Backup</button>
                     <hr style="border-color: var(--border-color);">
-                    <h6 class="mt-2 text-white">Ripristina da File Salvato (Forzatura Manuale)</h6>
+                    <h6 class="mt-2 text-white">Ripristina da File Salvato</h6>
+                    <p class="text-muted small">Usa questa funzione per caricare manualmente qualsiasi backup in caso di emergenza, sovrascrivendo i dati attuali.</p>
                     <input type="file" id="file-import" class="form-control mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
                 </div>
@@ -375,69 +376,16 @@
                 const localData = localStorage.getItem('gestionale_db_pixel');
                 if (localData) { try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 }; } }
                 sanitizeDatabase(); 
-                
                 document.getElementById('login-screen').classList.add('hidden'); 
-                document.getElementById('sync-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('note-area').value = db.note; 
+                document.getElementById('trans-data').value = getLocalDateString();
+                populateAnnoFiltri(); naviga('home'); updateExitButton(); 
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
-        function enterApp(startSection = 'home') {
-            document.getElementById('sync-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('note-area').value = db.note; 
-            document.getElementById('trans-data').value = getLocalDateString();
-            populateAnnoFiltri(); 
-            naviga(startSection); 
-            updateExitButton(); 
-        }
-
-        function checkDriveFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.name !== 'data.json') {
-                if (!confirm("⚠️ Attenzione: Il file scelto si chiama '" + file.name + "' e non 'data.json'.\n\nL'aggiornamento automatico è progettato per funzionare solo con data.json.\nSei sicuro di voler proseguire con questo file?")) {
-                    event.target.value = ''; 
-                    return;
-                }
-            }
-
-            const reader = new FileReader();
-            reader.onload = e => {
-                try {
-                    const cloudDb = JSON.parse(e.target.result);
-                    if (cloudDb.transazioni && cloudDb.fondi) {
-                        
-                        let localTimestamp = Number(db.timestamp) || 0;
-                        let cloudTimestamp = Number(cloudDb.timestamp) || 0;
-                        
-                        if (cloudTimestamp <= localTimestamp && localTimestamp !== 0) {
-                            alert("ℹ️ Nessun aggiornamento trovato.\n\nIl file appena caricato non contiene nuove operazioni (è uguale o più vecchio dei dati attuali).\nL'app si avvierà con i tuoi dati locali.");
-                            event.target.value = '';
-                            enterApp('home');
-                            return;
-                        }
-                        
-                        db = cloudDb;
-                        sanitizeDatabase();
-                        localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                        showToast("✅ Database Cloud Sincronizzato!");
-                        event.target.value = '';
-                        setTimeout(() => { enterApp('home'); }, 600);
-                        
-                    } else { throw new Error("Struttura non conforme"); }
-                } catch(err) {
-                    alert("⚠️ Errore: Il file non è un database valido.");
-                    event.target.value = '';
-                }
-            };
-            reader.readAsText(file);
-        }
-
         function saveData() { 
-            sanitizeDatabase(); 
-            db.last_update = getTimestampString(); 
-            db.timestamp = Date.now(); 
+            sanitizeDatabase(); db.last_update = getTimestampString(); db.timestamp = Date.now();
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
             dataChanged = true; updateExitButton(); updateDashboard(); 
         }
@@ -464,33 +412,27 @@
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
                     const dT = new Date(t.data);
-                    
                     if (t.sezione === 'conto') {
                         if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
-                        if (t.data <= localToday) { 
-                            if (t.tipo === 'entrata') saldoContabile += t.importo; else saldoContabile -= t.importo; 
-                        }
+                        if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += t.importo; else saldoContabile -= t.importo; }
                     } else if (t.sezione === 'carta') {
                         if (t.tipo === 'uscita' && (dT.getMonth()+1) === mC && dT.getFullYear() === aC) totaleCartaMese += t.importo;
-                        
-                        if (!t.confermato) {
-                            if (t.tipo === 'uscita') saldo -= t.importo; else saldo += t.importo;
-                        }
+                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= t.importo; else saldo += t.importo; }
                     }
                 }
             });
 
             saldo -= (db.fondi.personale + db.fondi.risparmi);
-            const mainCard = document.getElementById('main-card-saldo'); const alertContainer = document.getElementById('alert-container');
-            if (alertContainer) alertContainer.innerHTML = '';
-            if (saldo < 0) { if (mainCard) mainCard.style.background = 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'; if (alertContainer) alertContainer.innerHTML += '<div class="alert-negativo">⚠️ ATTENZIONE: CONTO IN NEGATIVO</div><br>'; } 
-            else { if (mainCard) mainCard.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'; }
+            const mainCard = document.getElementById('main-card-saldo'); const alertContainer = document.getElementById('alert-container'); alertContainer.innerHTML = '';
+            
+            if (saldo < 0) { mainCard.style.background = 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'; mainCard.style.borderColor = 'var(--accent-red)'; alertContainer.innerHTML = '<div class="alert-negativo">⚠️ CONTO IN NEGATIVO</div>'; } 
+            else { mainCard.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'; mainCard.style.borderColor = 'var(--border-color)'; }
 
-            document.getElementById('saldo-totale').innerText = `€ ${saldo.toFixed(2)}`;
-            document.getElementById('saldo-contabile').innerText = `€ ${saldoContabile.toFixed(2)}`;
-            document.getElementById('dash-carta-mese').innerText = `€ ${totaleCartaMese.toFixed(2)}`;
-            document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`;
-            document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
+            document.getElementById('saldo-totale').innerText = "€ " + saldo.toFixed(2);
+            document.getElementById('saldo-contabile').innerText = "€ " + saldoContabile.toFixed(2);
+            document.getElementById('dash-carta-mese').innerText = "€ " + totaleCartaMese.toFixed(2);
+            document.getElementById('dash-fondo-personale').innerText = "€ " + db.fondi.personale.toFixed(2);
+            document.getElementById('dash-fondo-risparmi').innerText = "€ " + db.fondi.risparmi.toFixed(2);
             
             if (document.getElementById('tot-personale-sec')) { document.getElementById('tot-personale-sec').innerText = "€ " + db.fondi.personale.toFixed(2); }
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
@@ -500,14 +442,14 @@
         }
 
         function checkRicorrentiStatus() {
-            const cookiesOggi = new Date(); const mC = cookiesOggi.getMonth() + 1; const aC = cookiesOggi.getFullYear();
-            const meseCorrenteFirma = `${aC}-${mC.toString().padStart(2, '0')}`;
+            const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const meseCorrenteFirma = aC + "-" + mC.toString().padStart(2, '0');
             const alertContainer = document.getElementById('alert-container');
             let mancano = db.ricorrenti.some(r => r.ultima_esecuzione !== meseCorrenteFirma);
             const btn = document.getElementById('btn-inserisci-ricorrenti');
-            if (btn) btn.style.display = mancano ? 'inline-block' : 'none';
+            if (btn) { btn.style.display = 'block'; if (!mancano) btn.style.display = 'none'; }
+            
             const ultimoGiornoMese = new Date(aC, mC, 0).getDate();
-            if (ultimoGiornoMese - cookiesOggi.getDate() <= 5 && mancano && alertContainer) { if(!alertContainer.innerHTML.includes('RICORDA:')) alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div><br>'; }
+            if (ultimoGiornoMese - oggi.getDate() <= 5 && mancano && alertContainer) { if (!alertContainer.innerHTML.includes('RICORDA:')) { alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div>'; } }
         }
 
         function naviga(sezione) {
@@ -515,43 +457,33 @@
             
             document.getElementById('fab-add').classList.add('hidden'); activeSection = sezione; document.getElementById('fab-add').innerHTML = (sezione === 'carta') ? '💳' : '+';
             
-            const btnHome = document.getElementById('btn-home-nav');
-            if (sezione === 'home') {
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                if (btnHome) { btnHome.innerHTML = 'Home'; btnHome.className = "btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm"; btnHome.style.background = "rgba(16, 185, 129, 0.1)"; btnHome.style.color = "var(--accent-green)"; btnHome.style.borderColor = "var(--accent-green)"; }
-                updateDashboard();
-            } else {
-                if (btnHome) { btnHome.innerHTML = '← Home'; btnHome.className = "btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm"; btnHome.style.background = "transparent"; btnHome.style.color = "var(--text-muted)"; btnHome.style.borderColor = "var(--border-color)"; }
-                
-                if (sezione === 'conto' || sezione === 'carta') {
-                    document.getElementById('transazioni-section').classList.remove('hidden'); document.getElementById('transazioni-title').innerText = (sezione === 'conto') ? '🏦 Conto' : '💳 Carta'; document.getElementById('fab-add').classList.remove('hidden');
-                    renderTable('corrente');
-                } else if (sezione === 'ricorrenti') { document.getElementById('ricorrenti-section').classList.remove('hidden'); renderRenovations(); } 
-                else if (sezione === 'fondi') { document.getElementById('fondi-section').classList.remove('hidden'); } 
-                else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); }
-            }
+            if (sezione === 'home') { document.getElementById('dashboard-view').classList.remove('hidden'); updateDashboard(); } 
+            else if (sezione === 'conto' || sezione === 'carta') {
+                document.getElementById('transazioni-section').classList.remove('hidden'); document.getElementById('transazioni-title').innerText = (sezione === 'conto') ? '🏦 Conto' : '💳 Carta'; document.getElementById('fab-add').classList.remove('hidden');
+                renderTable('corrente');
+            } else if (sezione === 'ricorrenti') { document.getElementById('ricorrenti-section').classList.remove('hidden'); renderRenovations(); } 
+            else if (sezione === 'fondi') { document.getElementById('fondi-section').classList.remove('hidden'); } 
+            else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); }
         }
 
-        function apriModalTransazione() {
-            document.getElementById('form-transazione').reset();
-            document.getElementById('trans-id').value = '';
-            document.getElementById('trans-data').value = getLocalDateString();
-            const myModal = new bootstrap.Modal(document.getElementById('modalTransazione'));
-            myModal.show();
+        function renderRenovations() {
+            const tbody = document.getElementById('ricorrenti-tbody'); let htmlRighe = ''; 
+            [...db.ricorrenti].reverse().forEach(r => { htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); 
+            tbody.innerHTML = htmlRighe; checkRicorrentiStatus(); 
         }
 
-        function addTransaction(e) {
-            e.preventDefault(); const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value;
+        function apriModalTransazione() { document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = ''; document.getElementById('trans-data').value = getLocalDateString(); const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+
+        function addTransaction(event) {
+            event.preventDefault(); const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value;
             
             if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
             
             let vecchiaTransazione = id ? db.transazioni.find(x => x.id === id) : null;
             if (vecchiaTransazione && vecchiaTransazione.isFondoTransfer) {
                 const tipoFondo = vecchiaTransazione.targetFondo || (vecchiaTransazione.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
-                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo;
-                if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
-                if (tipoInput === 'entrata') db.fondi[tipoFondo] -= importoInput;
-                if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;
+                if (vecchiaTransazione.tipo === 'entrata') db.fondi[tipoFondo] += vecchiaTransazione.importo; if (vecchiaTransazione.tipo === 'uscita') db.fondi[tipoFondo] -= vecchiaTransazione.importo;
+                if (tipoInput === 'entrata') db.fondi[tipoFondo] -= importoInput; if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;
             }
             
             const t = { id: id || generateSecureId(), sezione: vecchiaTransazione ? vecchiaTransazione.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: vecchiaTransazione ? vecchiaTransazione.confermato : false, isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false, targetFondo: vecchiaTransazione ? vecchiaTransazione.targetFondo : null };
@@ -567,12 +499,13 @@
             document.querySelectorAll('#transazioni-tabs .nav-link')[0].classList.toggle('active', mode === 'corrente'); document.querySelectorAll('#transazioni-tabs .nav-link')[1].classList.toggle('active', mode === 'archivio'); document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
             
             const btnTutti = document.getElementById('btn-conferma-tutti');
+            let dati = db.transazioni.filter(t => t.sezione === activeSection);
             if (btnTutti) {
-                let datiNonConfermati = db.transazioni.filter(t => t.sezione === 'carta' && !t.confermato);
-                if (activeSection === 'carta' && mode === 'archivio' && datiNonConfermati.length > 0) { btnTutti.classList.remove('hidden'); } else { btnTutti.classList.add('hidden'); }
+                if (activeSection === 'carta' && mode === 'archivio' && dati.some(t => !t.confermato)) { 
+                    btnTutti.classList.remove('hidden'); 
+                } else { btnTutti.classList.add('hidden'); }
             }
 
-            let dati = db.transazioni.filter(t => t.sezione === activeSection);
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
                 dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; });
@@ -658,12 +591,6 @@
             } else { showToast("Nessuna operazione da confermare qui."); }
         }
 
-        function renderRenovations() {
-            const tbody = document.getElementById('ricorrenti-tbody'); let htmlRighe = ''; 
-            [...db.ricorrenti].reverse().forEach(r => { htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); 
-            tbody.innerHTML = htmlRighe; checkRicorrentiStatus(); 
-        }
-
         function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         function addRicorrente(event) { 
@@ -699,6 +626,7 @@
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); 
         }
         
+        // RIPRISTINO SILENZIOSO CHE PROTEGGE L'INTEGRITÀ TEMPORALE CLOUD
         function importaFileBackup() { 
             const file = document.getElementById('file-import'); if (!file.files[0]) return showToast("⚠️ Seleziona un file!"); 
             const r = new FileReader(); 
