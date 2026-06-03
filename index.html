@@ -106,7 +106,7 @@
         #note-area { background: var(--bg-input) !important; color: var(--text-main) !important; font-style: italic; min-height: 180px; border-radius: 12px; padding: 15px; border: 1px solid var(--border-color) !important; width: 100%; box-sizing: border-box; resize: none; }
         #note-area:focus { border-color: var(--accent-orange) !important; outline: none; }
 
-        #login-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: var(--bg-main); }
+        #login-screen, #sync-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: var(--bg-main); }
         .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); border: 1px solid var(--border-color); width: 90%; max-width: 350px; }
         
         .table-container-white { border-radius: 20px; padding: 15px; }
@@ -123,6 +123,36 @@
             <input type="password" id="password-input" class="form-control form-control-lg mb-4 text-center fw-bold pin-input" placeholder="•••••" inputmode="numeric" style="letter-spacing: 5px; box-shadow: none;" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
             <div id="login-error" class="text-danger mt-3 hidden fw-bold" style="font-size: 0.85rem;">❌ PIN errato.</div>
+        </div>
+    </div>
+
+    <div id="sync-screen" class="hidden">
+        <div class="login-box" style="padding: 25px 20px; border-radius: 28px; background-color: #1e293b; max-width: 360px;">
+            <div class="d-flex justify-content-center align-items-center mb-4">
+                <h3 class="fw-bold text-white m-0">Gestionale</h3>
+                <span style="font-size: 1.4rem; margin-left: 8px;">📱</span>
+            </div>
+            
+            <div class="card p-4 border-0 mb-4 shadow-sm" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
+                <p class="fw-bold text-white mb-4" style="font-size: 1.05rem;">Sincronizzazione Cloud<br>in corso...</p>
+                
+                <div class="d-flex justify-content-center mb-4">
+                    <svg viewBox="0 0 40 40" width="70" height="70" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                      <path fill="#FFC107" d="M13.8 28.5L6.6 16l7.2-12.5h14.4L21 16z"/>
+                      <path fill="#1976D2" d="M13.8 28.5h14.4L35.4 16H21z"/>
+                      <path fill="#4CAF50" d="M28.2 28.5L35.4 16 28.2 3.5H13.8L21 16z"/>
+                    </svg>
+                </div>
+                
+                <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
+                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2 shadow" style="background-color: #93c5fd; color: #0f172a; border: none; font-size: 1rem;">↻ Verifica data.json</button>
+                
+                <button onclick="enterApp('home')" class="btn w-100 rounded-pill fw-bold py-2 mb-4" style="border: 1px solid #4ade80; color: #4ade80; background: transparent; font-size: 0.95rem;">⤬ Salta e usa dati locali</button>
+                
+                <p class="text-muted mb-0" style="font-size: 0.7rem; line-height: 1.5; font-weight: 500;">Nota: Il file data.json potrebbe essere stato rimosso da DriveSync. L'app continuerà a funzionare utilizzando gli ultimi dati memorizzati sul dispositivo.</p>
+            </div>
+            
+            <a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold" style="font-size: 0.75rem;">Gestione Backup Manuale (Avanzato)</a>
         </div>
     </div>
 
@@ -237,18 +267,13 @@
                 
                 <div class="card p-4 shadow-sm border-0 rounded-4 border mb-4">
                     <h5 style="color: var(--accent-blue);">💾 Esporta Database</h5>
-                    <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
-                    <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica data.json</button>
+                    <p class="text-muted small">Scarica il file aggiornato per salvarlo nel Cloud tramite DriveSync.</p>
+                    <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica Backup</button>
                     <hr style="border-color: var(--border-color);">
                     <h6 class="mt-2 text-white">Ripristina da File Salvato</h6>
+                    <p class="text-muted small">Usa questa funzione per caricare manualmente qualsiasi backup in caso di emergenza, sovrascrivendo i dati attuali.</p>
                     <input type="file" id="file-import" class="form-control mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
-                </div>
-
-                <div id="box-archiviazione" class="card p-4 shadow-sm border-0 rounded-4 border hidden mt-4" style="border-left: 5px solid var(--accent-orange) !important;">
-                    <h5 class="fw-bold mb-3" style="color: var(--accent-orange);">📦 Chiusura di Bilancio</h5>
-                    <p class="text-muted small">Il sistema ha rilevato movimenti vecchi nel tuo database locale.</p>
-                    <button id="btn-esegui-archiviazione" onclick="eseguiArchiviazione()" class="btn btn-warning fw-bold w-100 mt-2 text-dark">Avviso Pulizia Storico</button>
                 </div>
             </div>
         </div>
@@ -307,7 +332,7 @@
     </div>
 
     <script>
-        let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "" };
+        let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
@@ -325,6 +350,7 @@
             if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
             if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
             if (db.last_update === undefined) db.last_update = "";
+            if (db.timestamp === undefined) db.timestamp = 0;
             db.fondi.personale = Number(db.fondi.personale) || 0;
             db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
             if (db.note === undefined) db.note = "";
@@ -336,21 +362,84 @@
             db.ricorrenti.forEach(r => { if (!r.id || r.id.length < 15) r.id = generateSecureId(); });
         }
 
+        // ==========================================
+        // FLUSSO DI AVVIO E SCHERMATA INTERMEDIA
+        // ==========================================
+
         function checkPassword() {
             if (document.getElementById('password-input').value === '41079') {
                 const localData = localStorage.getItem('gestionale_db_pixel');
-                if (localData) { try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "" }; } }
+                if (localData) { try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 }; } }
                 sanitizeDatabase(); 
+                
+                // Passa alla schermata di sincronizzazione Drive
                 document.getElementById('login-screen').classList.add('hidden'); 
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('note-area').value = db.note; 
-                document.getElementById('trans-data').value = getLocalDateString();
-                populateAnnoFiltri(); naviga('home'); updateExitButton(); 
+                document.getElementById('sync-screen').classList.remove('hidden');
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
+        function enterApp(startSection = 'home') {
+            document.getElementById('sync-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('note-area').value = db.note; 
+            document.getElementById('trans-data').value = getLocalDateString();
+            populateAnnoFiltri(); 
+            naviga(startSection); 
+            updateExitButton(); 
+        }
+
+        function checkDriveFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Controllo Sicurezza: Avvisa se l'utente carica un file che non è data.json
+            if (file.name !== 'data.json') {
+                if (!confirm("⚠️ Attenzione: Il file scelto si chiama '" + file.name + "' e non 'data.json'.\n\nL'aggiornamento automatico è progettato per funzionare solo con data.json.\nSei sicuro di voler proseguire con questo file?")) {
+                    event.target.value = ''; 
+                    return;
+                }
+            }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const cloudDb = JSON.parse(e.target.result);
+                    if (cloudDb.transazioni && cloudDb.fondi) {
+                        
+                        let localTimestamp = Number(db.timestamp) || 0;
+                        let cloudTimestamp = Number(cloudDb.timestamp) || 0;
+                        
+                        // CONTROLLO MILLISECONDI: Rifiuta i file vecchi o identici
+                        if (cloudTimestamp <= localTimestamp && localTimestamp !== 0) {
+                            alert("ℹ️ Nessun aggiornamento trovato.\n\nIl file appena caricato non contiene nuove operazioni (è uguale o più vecchio dei dati attuali).\nL'app si avvierà con i tuoi dati locali.");
+                            event.target.value = '';
+                            enterApp('home');
+                            return;
+                        }
+                        
+                        // CARICAMENTO E AGGIORNAMENTO
+                        db = cloudDb;
+                        sanitizeDatabase();
+                        localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                        showToast("✅ Database Cloud Sincronizzato!");
+                        event.target.value = '';
+                        setTimeout(() => { enterApp('home'); }, 600);
+                        
+                    } else { throw new Error("Struttura non conforme"); }
+                } catch(err) {
+                    alert("⚠️ Errore: Il file non è un database valido.");
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+
         function saveData() { 
-            sanitizeDatabase(); db.last_update = getTimestampString(); 
+            sanitizeDatabase(); 
+            db.last_update = getTimestampString(); 
+            db.timestamp = Date.now(); // SCATOLA NERA: TIMESTAMPS AGGIORNATI AL SALVATAGGIO
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
             dataChanged = true; updateExitButton(); updateDashboard(); 
         }
@@ -370,7 +459,6 @@
             if (db.note !== currentNote) { db.note = currentNote; document.getElementById('note-status').innerText = "Salvate ✓"; saveData(); setTimeout(() => { document.getElementById('note-status').innerText = ""; }, 2000); } 
         }
 
-        // FIX: Spese carta NON confermate intaccano il Saldo Prudenziale
         function updateDashboard() {
             let saldo = 0; let totaleCartaMese = 0; let saldoContabile = 0;
             const oggi = new Date(); const mC = oggi.getMonth() + 1; const aC = oggi.getFullYear(); const localToday = getLocalDateString();
@@ -387,7 +475,6 @@
                     } else if (t.sezione === 'carta') {
                         if (t.tipo === 'uscita' && (dT.getMonth()+1) === mC && dT.getFullYear() === aC) totaleCartaMese += t.importo;
                         
-                        // Sottrae le spese carta NON confermate dal Saldo Prudenziale per aggiornarlo in tempo reale
                         if (!t.confermato) {
                             if (t.tipo === 'uscita') saldo -= t.importo; else saldo += t.importo;
                         }
@@ -412,7 +499,6 @@
             if (db.last_update) { document.getElementById('last-update-reg').innerText = "Dati aggiornati al: " + db.last_update; } else { document.getElementById('last-update-reg').innerText = "Dati aggiornati al: --/-- ore --:--"; }
             
             checkRicorrentiStatus();
-            checkArchiviazioneFineAnno(aC, mC);
         }
 
         function checkRicorrentiStatus() {
@@ -424,26 +510,6 @@
             if (btn) btn.style.display = mancano ? 'inline-block' : 'none';
             const ultimoGiornoMese = new Date(aC, mC, 0).getDate();
             if (ultimoGiornoMese - cookiesOggi.getDate() <= 5 && mancano && alertContainer) { if(!alertContainer.innerHTML.includes('RICORDA:')) alertContainer.innerHTML += '<div class="alert-ricorrenti">🔔 RICORDA: Inserisci i ricorrenti!</div><br>'; }
-        }
-
-        function checkArchiviazioneFineAnno(annoCorrente, meseCorrente) {
-            const limitYear = annoCorrente - 1;
-            const vecchieTransazioni = db.transazioni.filter(t => new Date(t.data).getFullYear() <= limitYear);
-            const boxArchiviazione = document.getElementById('box-archiviazione');
-            
-            if (boxArchiviazione) {
-                if (meseCorrente >= 3 && vecchieTransazioni.length > 0) {
-                    boxArchiviazione.classList.remove('hidden');
-                    document.getElementById('btn-esegui-archiviazione').innerText = `⚠️ Richiesta Pulizia Storico ${limitYear}`;
-                } else {
-                    boxArchiviazione.classList.add('hidden');
-                }
-            }
-        }
-
-        function eseguiArchiviazione() {
-            alert(`OPERAZIONE DA PC RICHIESTA\n\nL'app ha rilevato vecchi movimenti dell'anno scorso.\n\nPer garantire la sicurezza dei file offline:\n1. Apri il gestionale dal PC di casa.\n2. Esegui la 'Chiusura di Bilancio' dal PC.\n3. Esporta il nuovo data.json dal PC e importalo qui sul Pixel per riallineare i dispositivi.`);
-            document.getElementById('box-archiviazione').classList.add('hidden');
         }
 
         function naviga(sezione) {
@@ -630,8 +696,11 @@
         }
 
         function importaFileBackup() { const fileInput = document.getElementById('file-import'); if (!fileInput.files[0]) return showToast("⚠️ Seleziona file!"); const reader = new FileReader(); reader.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); saveData(); showToast("Database Sincronizzato!"); setTimeout(() => { location.reload(); }, 1000); } catch(err){ showToast("⚠️ File JSON non valido"); } }; reader.readAsText(fileInput.files[0]); }
+        
         function esportaFileBackup() { const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); }
+        
         function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = `REPORT ${type.toUpperCase()}`; let head = [['Data', 'Causale', 'Importo']]; let body = []; if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)], ['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } else if (type === 'ricorrenti') { head = [['Competenza', 'Giorno Scadenza', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) body.push([cols[0].innerText, cols[1].innerText, cols[2].innerText, cols[3].innerText]); }); } else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); }); } doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save(`Report_${type}.pdf`); }
+        
         function populateAnnoFiltri() { const sA = document.getElementById('filter-anno'); const aC = new Date().getFullYear(); if (sA) { sA.innerHTML = ''; for (let i = aC; i >= aC - 5; i--) sA.innerHTML += `<option value="${i}">${i}</option>`; } let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); if (sM) sM.value = pM.toString().padStart(2,'0'); }
     </script>
 </body>
