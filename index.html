@@ -391,15 +391,15 @@
             updateExitButton(); 
         }
 
+        // LOGICA DI CONTROLLO INVISIBILE - Niente alert, cancellazione automatica degli errori
         function checkDriveFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            // 1. Scarta file errati/backup in totale silenzio e resta fermo
             if (file.name !== 'data.json') {
-                if (!confirm("⚠️ Attenzione: Il file scelto si chiama '" + file.name + "' e non 'data.json'.\n\nL'aggiornamento automatico è progettato per funzionare solo con data.json.\nSei sicuro di voler proseguire con questo file?")) {
-                    event.target.value = ''; 
-                    return;
-                }
+                event.target.value = ''; 
+                return;
             }
 
             const reader = new FileReader();
@@ -411,23 +411,24 @@
                         let localTimestamp = Number(db.timestamp) || 0;
                         let cloudTimestamp = Number(cloudDb.timestamp) || 0;
                         
+                        // 2. Se non ci sono novità (file vecchio o uguale), entra silenziosamente coi dati locali
                         if (cloudTimestamp <= localTimestamp && localTimestamp !== 0) {
-                            alert("ℹ️ Nessun aggiornamento trovato.\n\nIl file appena caricato non contiene nuove operazioni (è uguale o più vecchio dei dati attuali).\nL'app si avvierà con i tuoi dati locali.");
                             event.target.value = '';
                             enterApp('home');
                             return;
                         }
                         
+                        // 3. Se ci sono novità, aggiorna in background ed entra come un fulmine
                         db = cloudDb;
                         sanitizeDatabase();
                         localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                        showToast("✅ Database Cloud Sincronizzato!");
                         event.target.value = '';
-                        setTimeout(() => { enterApp('home'); }, 600);
+                        enterApp('home');
+                        showToast("✅ Dati Sincronizzati");
                         
                     } else { throw new Error("Struttura non conforme"); }
                 } catch(err) {
-                    alert("⚠️ Errore: Il file non è un database valido.");
+                    // 4. Se il file .json è corrotto, annulla in silenzio e resta fermo
                     event.target.value = '';
                 }
             };
