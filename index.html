@@ -289,6 +289,23 @@
                         <input type="hidden" id="trans-id">
                         <div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div>
                         <div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div>
+                        
+                        <div class="form-floating mb-3">
+                            <select id="trans-categoria" class="form-select" required>
+                                <option value="Alimentari">🛒 Alimentari</option>
+                                <option value="Utenze">💡 Utenze & Bollette</option>
+                                <option value="Auto">🚗 Auto & Trasporti</option>
+                                <option value="Casa">🏠 Casa</option>
+                                <option value="Salute">💊 Salute</option>
+                                <option value="Svago">🍿 Svago & Ristoranti</option>
+                                <option value="Personale">🛍️ Shopping Personale</option>
+                                <option value="Risparmio">💰 Risparmio & Investimenti</option>
+                                <option value="Reddito">💼 Entrate / Stipendio</option>
+                                <option value="Altro" selected>📌 Altro</option>
+                            </select>
+                            <label>Categoria</label>
+                        </div>
+                        
                         <div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div>
                         <div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
                         <button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button>
@@ -308,6 +325,23 @@
                         <div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div>
                         <div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div>
                         <div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" required><label>Giorno Scadenza (1-31)</label></div>
+                        
+                        <div class="form-floating mb-3">
+                            <select id="ric-categoria" class="form-select" required>
+                                <option value="Alimentari">🛒 Alimentari</option>
+                                <option value="Utenze">💡 Utenze & Bollette</option>
+                                <option value="Auto">🚗 Auto & Trasporti</option>
+                                <option value="Casa">🏠 Casa</option>
+                                <option value="Salute">💊 Salute</option>
+                                <option value="Svago">🍿 Svago & Ristoranti</option>
+                                <option value="Personale">🛍️ Shopping Personale</option>
+                                <option value="Risparmio">💰 Risparmio & Investimenti</option>
+                                <option value="Reddito">💼 Entrate / Stipendio</option>
+                                <option value="Altro" selected>📌 Altro</option>
+                            </select>
+                            <label>Categoria</label>
+                        </div>
+                        
                         <div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div>
                         <div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div>
                         <button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button>
@@ -365,13 +399,20 @@
             db.transazioni.forEach(t => { 
                 if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
                 if (!t.sezione) t.sezione = 'conto'; 
+                if (!t.categoria) t.categoria = 'Altro';
                 if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
             });
-            db.ricorrenti.forEach(r => { if (!r.id || r.id.length < 15) r.id = generateSecureId(); });
+            db.ricorrenti.forEach(r => { 
+                if (!r.id || r.id.length < 15) r.id = generateSecureId(); 
+                if (!r.categoria) r.categoria = 'Altro';
+            });
         }
 
+        function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
+
         function checkPassword() {
-            if (document.getElementById('password-input').value === '41079') {
+            const inputVal = document.getElementById('password-input').value;
+            if (hashPIN(inputVal) === 49530741) { 
                 const localData = localStorage.getItem('gestionale_db_pixel');
                 if (localData) { try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 }; } }
                 sanitizeDatabase(); 
@@ -391,12 +432,10 @@
             updateExitButton(); 
         }
 
-        // LOGICA DI CONTROLLO INVISIBILE - Niente alert, cancellazione automatica degli errori
         function checkDriveFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // 1. Scarta file errati/backup in totale silenzio e resta fermo
             if (file.name !== 'data.json') {
                 event.target.value = ''; 
                 return;
@@ -411,14 +450,12 @@
                         let localTimestamp = Number(db.timestamp) || 0;
                         let cloudTimestamp = Number(cloudDb.timestamp) || 0;
                         
-                        // 2. Se non ci sono novità (file vecchio o uguale), entra silenziosamente coi dati locali
                         if (cloudTimestamp <= localTimestamp && localTimestamp !== 0) {
                             event.target.value = '';
                             enterApp('home');
                             return;
                         }
                         
-                        // 3. Se ci sono novità, aggiorna in background ed entra come un fulmine
                         db = cloudDb;
                         sanitizeDatabase();
                         localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
@@ -428,7 +465,6 @@
                         
                     } else { throw new Error("Struttura non conforme"); }
                 } catch(err) {
-                    // 4. Se il file .json è corrotto, annulla in silenzio e resta fermo
                     event.target.value = '';
                 }
             };
@@ -537,12 +573,14 @@
             document.getElementById('form-transazione').reset();
             document.getElementById('trans-id').value = '';
             document.getElementById('trans-data').value = getLocalDateString();
+            document.getElementById('trans-categoria').value = 'Altro';
             const myModal = new bootstrap.Modal(document.getElementById('modalTransazione'));
             myModal.show();
         }
 
         function addTransaction(e) {
             e.preventDefault(); const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value;
+            const categoriaInput = document.getElementById('trans-categoria').value;
             
             if (isNaN(importoInput) || importoInput <= 0) { showToast("⚠️ Importo non valido"); return; }
             
@@ -555,7 +593,7 @@
                 if (tipoInput === 'uscita') db.fondi[tipoFondo] += importoInput;
             }
             
-            const t = { id: id || generateSecureId(), sezione: vecchiaTransazione ? vecchiaTransazione.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, importo: importoInput, confermato: vecchiaTransazione ? vecchiaTransazione.confermato : false, isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false, targetFondo: vecchiaTransazione ? vecchiaTransazione.targetFondo : null };
+            const t = { id: id || generateSecureId(), sezione: vecchiaTransazione ? vecchiaTransazione.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, categoria: categoriaInput, importo: importoInput, confermato: vecchiaTransazione ? vecchiaTransazione.confermato : false, isFondoTransfer: vecchiaTransazione ? vecchiaTransazione.isFondoTransfer : false, targetFondo: vecchiaTransazione ? vecchiaTransazione.targetFondo : null };
             
             if (id) { db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; } else { db.transazioni.push(t); }
             
@@ -602,7 +640,7 @@
                 
                 htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
-                    <td class="fw-bold">${t.causale}</td>
+                    <td class="fw-bold">${t.causale}<br><small style="color:var(--accent-blue); font-weight:normal; font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
                     <td class="text-end ${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td>
                     <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
                 </tr>`;
@@ -627,7 +665,7 @@
             } 
         }
 
-        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { 
             if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
@@ -653,7 +691,7 @@
                     if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
                     
                     let dataAddebito = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
-                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
+                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
                 }
                 saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
             } else { showToast("Nessuna operazione da confermare qui."); }
@@ -661,16 +699,16 @@
 
         function renderRenovations() {
             const tbody = document.getElementById('ricorrenti-tbody'); let htmlRighe = ''; 
-            [...db.ricorrenti].reverse().forEach(r => { htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}</td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); 
+            [...db.ricorrenti].reverse().forEach(r => { htmlRighe += `<tr><td style="width:60px;"><span class="badge bg-secondary">${r.mese==='attuale'?'C':'P'}</span><br><small>G.${r.giorno}</small></td><td class="fw-bold">${r.causale}<br><small style="color:var(--accent-blue); font-weight:normal; font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="text-end ${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end" style="width:70px;"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; }); 
             tbody.innerHTML = htmlRighe; checkRicorrentiStatus(); 
         }
 
-        function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
-        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; document.getElementById('ric-categoria').value = 'Altro'; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         function addRicorrente(event) { 
-            event.preventDefault(); const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const imp = parseFloat(document.getElementById('ric-importo').value); 
+            event.preventDefault(); const id = document.getElementById('ric-id').value; const t = document.getElementById('ric-tipo').value; const m = document.getElementById('ric-mese').value; const g = parseInt(document.getElementById('ric-giorno').value); const c = document.getElementById('ric-causale').value; const cat = document.getElementById('ric-categoria').value; const imp = parseFloat(document.getElementById('ric-importo').value); 
             if (isNaN(imp) || imp <= 0) { showToast("⚠️ Importo non valido"); return; } 
-            const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, importo: imp, ultima_esecuzione: "" }; 
+            const r = { id: id || generateSecureId(), tipo: t, mese: m, giorno: g, causale: c, categoria: cat, importo: imp, ultima_esecuzione: "" }; 
             if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } else db.ricorrenti.push(r); 
             saveData(); renderRenovations(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); showToast("Ricorrente salvato"); 
         }
@@ -682,7 +720,7 @@
                 let m = mC; let y = aC; if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } } 
                 let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
                 const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
-                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
+                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
             }); 
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
@@ -690,8 +728,8 @@
         function modificaFondi(tipoFondo, azione) { 
             const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); const valore = parseFloat(input.value); 
             if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); 
-            if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
-            else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
+            if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
+            else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } 
             input.value = ''; saveData(); showToast("Fondi aggiornati"); 
         }
         
@@ -715,10 +753,10 @@
         }
         
         function exportToPDF(type) { 
-            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); let head = [['Data', 'Causale', 'Importo']]; let body = []; 
-            if (type === 'fondi') { head = [['Nome Fondo', 'Disponibilita Attuale']]; body.push(['Fondo Personale', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } 
-            else if (type === 'ricorrenti') { head = [['Competenza e Giorno', 'Causale', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText, cols[2].innerText]); } }); } 
-            else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText, cols[2].innerText]); } }); } 
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = []; 
+            if (type === 'fondi') { head = [['Nome Fondo', '', '', 'Disponibilita Attuale']]; body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } 
+            else if (type === 'ricorrenti') { head = [['Competenza / Giorno', 'Causale', 'Categoria', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } }); } 
+            else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } }); } 
             doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); 
         }
         
