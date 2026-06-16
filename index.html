@@ -10,107 +10,52 @@
     
     <title>Gestionale</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
+    
+    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/bank.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/bank.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root {
-            color-scheme: dark;
-            --bg-main: #090d16;
-            --bg-card: #111827;
-            --bg-input: #1f2937;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --accent-blue: #38bdf8;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --accent-orange: #f59e0b;
-        }
-
-        body { 
-            background-color: var(--bg-main) !important; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            color: var(--text-main) !important; 
-            padding-bottom: 90px; 
-            transition: background 0.3s; 
-            -webkit-tap-highlight-color: transparent; 
-        }
-        
+        :root { color-scheme: dark; --bg-main: #090d16; --bg-card: #111827; --bg-input: #1f2937; --border-color: rgba(255, 255, 255, 0.08); --text-main: #f3f4f6; --text-muted: #9ca3af; --accent-blue: #38bdf8; --accent-green: #10b981; --accent-red: #ef4444; --accent-orange: #f59e0b; }
+        body { background-color: var(--bg-main) !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-main) !important; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
-
-        .bg-white, .card, .table-container-white, .note-container, .section-container, .dropdown-menu { 
-            background-color: var(--bg-card) !important; 
-            color: var(--text-main) !important; 
-            border: 1px solid var(--border-color) !important; 
-        }
-        
-        .form-control, .form-select { 
-            background-color: var(--bg-input) !important; 
-            border: 1px solid var(--border-color) !important; 
-            color: var(--text-main) !important; 
-        }
-        
-        .form-control:focus, .form-select:focus { 
-            border-color: var(--accent-blue) !important; 
-            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important; 
-        }
-        
-        .modal-content { 
-            background-color: var(--bg-card) !important; 
-            color: var(--text-main) !important; 
-            border: 1px solid var(--border-color); 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; 
-            border-radius: 24px; 
-        }
-        
-        .modal-header { border-bottom: 1px solid var(--border-color); }
-        .form-floating > label { color: var(--text-muted) !important; }
-        
+        .card, .table-container-white, .note-container, .section-container, .dropdown-menu { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; }
+        .form-control, .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+        .form-control:focus, .form-select:focus { border-color: var(--accent-blue) !important; box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important; }
+        .modal-content { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; border-radius: 24px; }
         .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
-        .table td, .table th { border-color: var(--border-color) !important; color: var(--text-main) !important; }
-        .table-light th { background-color: var(--bg-input) !important; color: var(--text-muted) !important; }
-        
+        .table td, .table th { border-color: var(--border-color) !important; }
         .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
         .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
-
-        .dropdown-item { color: var(--text-main) !important; transition: 0.2s; }
-        .dropdown-item:hover { background-color: rgba(255,255,255,0.05) !important; }
-        
-        .bg-conto { background-color: rgba(56, 189, 248, 0.05) !important; border-left: 3px solid var(--accent-blue); border:none; }
-        .bg-carta { background-color: rgba(251, 191, 36, 0.05) !important; border-left: 3px solid #fbbf24; border:none; }
-        .bg-ricorrenti { background-color: rgba(245, 158, 11, 0.05) !important; border-left: 3px solid var(--accent-orange); border:none; }
-        .bg-fondi { background-color: rgba(16, 185, 129, 0.05) !important; border-left: 3px solid var(--accent-green); border:none; }
-
         .entrata { color: var(--accent-green) !important; font-weight: bold; }
         .uscita { color: var(--accent-red) !important; font-weight: bold; }
         .riga-futura { background-color: rgba(56, 189, 248, 0.03) !important; border-left: 3px solid var(--accent-blue) !important; }
-
         .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), #0284c7); color: #000; border: none; font-size: 28px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4); z-index: 999; display: flex; align-items: center; justify-content: center; font-weight: 800; }
-        
         .top-header { position: sticky; top: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(12px); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        
-        .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
-        .valore-saldo { font-size: 3rem; font-weight: 800; margin: 0; letter-spacing: -1px; }
-        
+        .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+        .valore-saldo { font-size: 3rem; font-weight: 800; letter-spacing: -1px; }
         .box-metrica { background: rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 12px; flex: 1; font-size: 0.8rem; margin: 0 5px; border: 1px solid var(--border-color); }
         .alert-negativo, .alert-ricorrenti { padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; border: 1px solid transparent; }
         .alert-negativo { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: var(--accent-red); }
         .alert-ricorrenti { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border-color: var(--accent-orange); }
-        
         .note-container { border-left: 6px solid var(--accent-orange) !important; border-radius: 20px; padding: 15px; }
         #note-area { background: var(--bg-input) !important; color: var(--text-main) !important; font-style: italic; min-height: 180px; border-radius: 12px; padding: 15px; border: 1px solid var(--border-color) !important; width: 100%; resize: none; }
+        #login-screen, #sync-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: var(--bg-main); }
+        .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 24px; text-align: center; border: 1px solid var(--border-color); width: 90%; max-width: 350px; }
+        .table-container-white { border-radius: 20px; padding: 15px; }
+        .section-container { padding: 15px 5px; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-box">
-            <div style="font-size: 4rem;">📱</div>
+            <img src="https://img.icons8.com/fluency/192/bank.png" style="width: 80px; height: 80px;" class="mb-4" alt="Banca">
             <h2 class="mb-4 fw-bold text-white">Gestionale</h2>
             <input type="password" id="password-input" class="form-control form-control-lg mb-4 text-center fw-bold pin-input" placeholder="•••••" inputmode="numeric" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
@@ -120,7 +65,10 @@
 
     <div id="sync-screen" class="hidden">
         <div class="login-box" style="padding: 25px 20px; border-radius: 28px; background-color: #1e293b; max-width: 360px;">
-            <h3 class="fw-bold text-white mb-4">Sincronizzazione Cloud</h3>
+            <div class="d-flex justify-content-center align-items-center mb-4">
+                <h3 class="fw-bold text-white m-0">Sincronizzazione</h3>
+                <span style="font-size: 1.4rem; margin-left: 8px;">🏦</span>
+            </div>
             <div class="card p-4 border-0 mb-4" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
                 <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
                 <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verifica data.json</button>
@@ -264,14 +212,18 @@
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
         function getTimestampString() { const now = new Date(); return String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + " ore " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0'); }
         
-        // FIX ANTI-CRASH: Parsing difensivo sicuro delle stringhe data
         function formatDate(s) { 
             if (!s || typeof s !== 'string' || !s.includes('-')) return "--/--/--"; 
-            const p = s.split('-'); 
-            if (p.length !== 3) return "--/--/--";
+            const p = s.split('-'); if (p.length !== 3) return "--/--/--";
             return p[2] + "/" + p[1] + "/" + p[0].substring(2); 
         }
         
+        function cleanNumeric(val) {
+            if (val === undefined || val === null || val === '') return 0;
+            let cleanStr = String(val).replace(/[^0-9.,-]/g, '').replace(',', '.');
+            return parseFloat(cleanStr) || 0;
+        }
+
         function showToast(message) { 
             const toastEl = document.getElementById('main-toast'); let toast = bootstrap.Toast.getInstance(toastEl);
             if (toast) { toast.hide(); } document.getElementById('toast-message').innerText = message; toast = new bootstrap.Toast(toastEl); toast.show(); 
@@ -285,13 +237,25 @@
                 if (!Array.isArray(db.transazioni)) db.transazioni = [];
                 if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
                 if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
-                db.fondi.personale = Number(db.fondi.personale) || 0; db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
                 
-                db.transazioni = db.transazioni.filter(t => t && typeof t.data === 'string' && t.data.match(/^\d{4}-\d{2}-\d{2}$/));
+                db.fondi.personale = cleanNumeric(db.fondi.personale); 
+                db.fondi.risparmi = cleanNumeric(db.fondi.risparmi);
+                
                 db.transazioni.forEach(t => { 
-                    if (!t.id || t.id.length < 15) t.id = generateSecureId(); if (!t.sezione) t.sezione = 'conto'; if (!t.categoria) t.categoria = 'Altro';
-                    t.importo = Number(t.importo) || 0;
-                    if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
+                    if (t) {
+                        if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
+                        if (!t.sezione) t.sezione = 'conto'; 
+                        if (!t.categoria) t.categoria = 'Altro';
+                        t.importo = cleanNumeric(t.importo);
+                        if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
+                    }
+                });
+                db.ricorrenti.forEach(r => {
+                    if (r) {
+                        if (!r.id || r.id.length < 15) r.id = generateSecureId();
+                        if (!r.categoria) r.categoria = 'Altro';
+                        r.importo = cleanNumeric(r.importo);
+                    }
                 });
             } catch (e) { console.error("Errore sanitizzazione strutturale:", e); }
         }
@@ -307,7 +271,16 @@
                             document.getElementById('login-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden');
                             document.getElementById('note-area').value = db.note || ""; document.getElementById('trans-data').value = getLocalDateString();
                             populateAnnoFiltri(); naviga('home');
-                        } else throw new Error();
+                        } else {
+                            const errData = await response.json().catch(() => ({}));
+                            if (response.status === 503) {
+                                document.getElementById('login-error').innerHTML = "⚠️ " + (errData.error || "Server occupato.");
+                            } else {
+                                document.getElementById('login-error').innerHTML = "⚠️ Sincronizzazione fallita.";
+                            }
+                            document.getElementById('login-error').setTimeout = 3000;
+                            document.getElementById('login-error').classList.remove('hidden');
+                        }
                     } catch (e) { document.getElementById('login-error').innerHTML = "⚠️ Server offline."; document.getElementById('login-error').classList.remove('hidden'); }
                 } else {
                     const localData = localStorage.getItem('gestionale_db_pixel'); if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
@@ -338,7 +311,7 @@
         }
 
         async function saveData() { 
-            db.timestamp = Date.now(); // SOURCE OF TRUTH TIMESTAMP FORZATO PRIMA DEL WRITE
+            db.timestamp = Date.now(); 
             sanitizeDatabase(); db.last_update = getTimestampString(); 
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); updateDashboard(); updateExitButton();
             if (isServerMode) {
@@ -358,15 +331,21 @@
 
         function updateDashboard() {
             let saldo = 0; let totaleCartaMese = 0; let saldoContabile = 0; const oggi = new Date(); const localToday = getLocalDateString();
+            
+            db.fondi.personale = cleanNumeric(db.fondi.personale);
+            db.fondi.risparmi = cleanNumeric(db.fondi.risparmi);
+
             db.transazioni.forEach(t => {
                 if (t && !t.isFondoTransfer && typeof t.data === 'string') {
                     const parts = t.data.split('-'); if (parts.length !== 3) return;
+                    let imp = cleanNumeric(t.importo);
+                    
                     if (t.sezione === 'conto') {
-                        if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
-                        if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += t.importo; else saldoContabile -= t.importo; }
+                        if (t.tipo === 'entrata') saldo += imp; else saldo -= imp;
+                        if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += imp; else saldoContabile -= imp; }
                     } else if (t.sezione === 'carta') {
-                        if (t.tipo === 'uscita' && parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) totaleCartaMese += t.importo;
-                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= t.importo; else saldo += t.importo; }
+                        if (t.tipo === 'uscita' && parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) totaleCartaMese += imp;
+                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= imp; else saldo += imp; }
                     }
                 }
             });
@@ -419,18 +398,49 @@
         function renderTable(mode) {
             activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = ''; const oggi = new Date(); const localToday = getLocalDateString();
             document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
+            
+            const btnTutti = document.getElementById('btn-conferma-tutti');
+            if (btnTutti) {
+                let datiNonConfermati = db.transazioni.filter(t => t && t.sezione === 'carta' && !t.confermato);
+                if (activeSection === 'carta' && mode === 'archivio' && datiNonConfermati.length > 0) { btnTutti.classList.remove('hidden'); } else { btnTutti.classList.add('hidden'); }
+            }
+
             let dati = db.transazioni.filter(t => t && t.sezione === activeSection);
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
-                dati = dati.filter(t => { if(!t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; });
+                dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; });
                 if (searchVal) dati = dati.filter(t => t.causale && t.causale.toLowerCase().includes(searchVal));
             } else {
-                dati = dati.filter(t => { if(!t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) > oggi.getFullYear() || (parseInt(parts[0]) === oggi.getFullYear() && parseInt(parts[1]) >= (oggi.getMonth() + 1)); });
+                dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) > oggi.getFullYear() || (parseInt(parts[0]) === oggi.getFullYear() && parseInt(parts[1]) >= (oggi.getMonth() + 1)); });
             }
-            dati.sort((a,b) => b.data.localeCompare(a.data)).forEach(t => {
-                let az = activeSection === 'carta' && !t.confermato ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
-                tbody.innerHTML += `<tr><td><small class="text-muted d-block">${formatDate(t.data)}</small></td><td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria}</small></td><td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td><td class="text-end">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`;
+            
+            let boxTotale = document.getElementById('totale-archivio-box');
+            if (boxTotale) {
+                if (mode === 'archivio' && activeSection === 'carta') {
+                    let totArchivio = dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? cleanNumeric(t.importo) : -cleanNumeric(t.importo)), 0);
+                    boxTotale.classList.remove('hidden'); document.getElementById('totale-archivio-val').innerText = '€ ' + totArchivio.toFixed(2);
+                } else { boxTotale.classList.add('hidden'); }
+            }
+
+            let htmlRighe = '';
+            dati.sort((a,b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id))).forEach(t => {
+                const isFutura = t.data > localToday; let az = ''; let st = '';
+                if (activeSection === 'carta') {
+                    if (t.confermato) { st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>'; } 
+                    else { 
+                        st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>'; 
+                        let btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
+                        az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; 
+                    }
+                }
+                htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
+                    <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
+                    <td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
+                    <td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${cleanNumeric(t.importo).toFixed(2)}</td>
+                    <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
+                </tr>`;
             });
+            tbody.innerHTML = htmlRighe;
         }
 
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
@@ -447,10 +457,25 @@
             }
         }
 
-        function renderRenovations() { const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; [...db.ricorrenti].reverse().forEach(r => { tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}</td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td><button onclick="delR('${r.id}')" class="btn btn-sm btn-link text-danger">✖</button></td></tr>`; }); }
+        function renderRenovations() { 
+            const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
+            [...db.ricorrenti].reverse().forEach(r => { 
+                if (r) {
+                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${cleanNumeric(r.importo).toFixed(2)}</td><td class="text-end"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
+                }
+            }); 
+        }
         function delR(id) { if (confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
         function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
-        function addRicorrente(e) { e.preventDefault(); const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp)) return; const r = { id: generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; db.ricorrenti.push(r); saveData(); renderRenovations(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); }
+        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        
+        function addRicorrente(e) { 
+            e.preventDefault(); const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
+            const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
+            if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } 
+            else { db.ricorrenti.push(r); }
+            saveData(); renderRenovations(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); 
+        }
         
         function inserisciTuttiRicorrenti() {
             const o = new Date(); let ins = 0; const meseCorrenteFirma = `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
@@ -463,7 +488,6 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); }
         }
 
-        // FIX TYPO 2: Sostituito rigidamente 'category' in 'categoria' italiano nel prelievo
         function modificaFondi(tipoFondo, action) {
             const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
@@ -476,7 +500,29 @@
             input.value = ''; saveData();
         }
 
-        // FIX TYPO 1: Sostituito accuratamente t.sezen in t.sezione per abilitare la conferma automatica
+        async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
+        async function ripristinaDaServer() { const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
+        async function archiviaAFreddo() { const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
+        function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
+        function importaFileBackup() { const file = document.getElementById('file-import').files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); } catch(err) { alert("File non valido"); } }; r.readAsText(file); }
+        
+        // FIX COMPILAZIONE ANNI TEMPLATE LITERALS
+        function populateAnnoFiltri() { 
+            const s = document.getElementById('filter-anno'); 
+            if (s) { 
+                s.innerHTML = ''; 
+                const c = new Date().getFullYear(); 
+                for (let i = c; i >= c - 5; i--) {
+                    s.innerHTML += `<option value="${i}">${i}</option>`; 
+                }
+            } 
+            let pM = new Date().getMonth() + 1; 
+            const sM = document.getElementById('filter-mese'); 
+            if (sM) sM.value = pM.toString().padStart(2, '0'); 
+        }
+        
+        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        
         function confermaTutteCarte() { 
             if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
             let modificate = false; let totaleDaAddebitare = 0; let meseRiferimento = null; let annoRiferimento = null;
@@ -488,7 +534,7 @@
                     const parts = t.data.split('-'); const tAnno = parseInt(parts[0]); const tMese = parseInt(parts[1]);
                     let con = false;
                     if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
-                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
+                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? cleanNumeric(t.importo) : -cleanNumeric(t.importo)); }
                 }
             });
             if (modificate) { 
@@ -503,35 +549,31 @@
             } else { showToast("Nessuna operazione da confermare qui."); }
         }
 
-        // RIPRISTINO INTERO MOTORE REALE ESPORTAZIONE PDF NATIVO
         function exportToPDF(type) { 
-            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); 
-            let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = []; 
-            if (type === 'fondi') { 
-                head = [['Nome Fondo', '', '', 'Disponibilita Attuale']]; 
-                body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); 
-                body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]); 
-            } else if (type === 'ricorrenti') { 
-                head = [['Competenza / Giorno', 'Causale', 'Categoria', 'Importo']]; 
-                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
-                    const cols = row.querySelectorAll('td'); 
-                    if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } 
-                }); 
-            } else { 
-                document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
-                    const cols = row.querySelectorAll('td'); 
-                    if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } 
-                }); 
-            } 
-            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); 
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase();
+            let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = [];
+            if (type === 'fondi') {
+                head = [['Nome Fondo', '', '', 'Disponibilità Attuale']];
+                body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]);
+            } else if (type === 'ricorrenti') {
+                head = [['Scadenza', 'Causale', 'Categoria', 'Importo']];
+                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => {
+                    const cols = row.querySelectorAll('td');
+                    if (cols.length >= 3) { body.push([cols[0].innerText.trim(), cols[1].innerText.split('\n')[0], 'Ricorrente', cols[2].innerText.trim()]); }
+                });
+            } else {
+                document.querySelectorAll('#transazioni-tbody tr').forEach(row => {
+                    const cols = row.querySelectorAll('td');
+                    if (cols.length >= 3) {
+                        const lines = cols[1].innerText.split('\n');
+                        body.push([cols[0].innerText.trim(), lines[0] ? lines[0].trim() : '', lines[1] ? lines[1].trim() : '', cols[2].innerText.trim()]);
+                    }
+                });
+            }
+            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } });
+            doc.save("Report_" + type + "_" + new Date().toISOString().split('T')[0] + ".pdf");
         }
-
-        async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
-        async function ripristinaDaServer() { const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
-        async function archiviaAFreddo() { const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
-        function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
-        function importaFileBackup() { const file = document.getElementById('file-import').files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); } catch(err) { alert("File non valido"); } }; r.readAsText(file); }
-        function populateAnnoFiltri() { const s = document.getElementById('filter-anno'); if (s) { s.innerHTML = ''; const c = new Date().getFullYear(); for (let i = c; i >= c - 5; i--) s.innerHTML += `<option value="' + i + '">' + i + '</option>`; } }
+        function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
     </script>
 </body>
 </html>
