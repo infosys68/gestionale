@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestionale-cache-v4'; // Versione aggiornata per forzare il reset totale delle vecchie PWA
+const CACHE_NAME = 'gestionale-cache-v4';
 const urlsToCache = [
   './',
   './manifest.json',
@@ -10,51 +10,29 @@ const urlsToCache = [
 
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              console.log('[SW] Rimozione vecchia cache obsoleta:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
+      caches.keys().then(cacheNames => Promise.all(cacheNames.map(c => { if (c !== CACHE_NAME) return caches.delete(c); })))
     ])
   );
 });
 
 self.addEventListener('fetch', event => {
-  // Escludi tassativamente le API dati LAN per non bloccare lo scambio dati con il PC
-  if (event.request.url.includes('/api/')) {
-    return;
-  }
-
-  // Strategia Network-First: interroga sempre prima GitHub live, se offline usa la cache locale
+  if (event.request.url.includes('/api/')) return;
   event.respondWith(
     fetch(event.request)
-      .then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+      .then(res => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
-        return response;
+        return res;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
