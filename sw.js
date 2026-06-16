@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestionale-cache-v4'; // Versione incrementata per forzare il reset totale
+const CACHE_NAME = 'gestionale-cache-v4'; // Versione aggiornata per forzare il reset totale delle vecchie PWA
 const urlsToCache = [
   './',
   './manifest.json',
@@ -25,7 +25,7 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME) {
-              console.log('[SW] Eliminazione vecchia cache:', cacheName);
+              console.log('[SW] Rimozione vecchia cache obsoleta:', cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -36,10 +36,12 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Escludi tassativamente le API dati LAN per non bloccare lo scambio dati con il PC
   if (event.request.url.includes('/api/')) {
-    return; // Non toccare mai i dati del server Python
+    return;
   }
 
+  // Strategia Network-First: interroga sempre prima GitHub live, se offline usa la cache locale
   event.respondWith(
     fetch(event.request)
       .then(response => {
