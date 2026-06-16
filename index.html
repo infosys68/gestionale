@@ -11,8 +11,9 @@
     <title>Gestionale</title>
     <link rel="manifest" href="manifest.json">
     
-    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/bank.png">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/bank.png">
+    <!-- === COORDINA ICONA BANCA DATA-URI STILIZZATA PER PREFERITI E ICONA APP SMARTPHONE === -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -30,6 +31,10 @@
         .modal-content { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; border-radius: 24px; }
         .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
         .table td, .table th { border-color: var(--border-color) !important; }
+        
+        /* RETE DI CONTENIMENTO GRAFICA RENDERING AD IMPATTO CPU ZERO PER IL PIXEL */
+        #transazioni-tbody tr { content-visibility: auto; contain-intrinsic-size: 0 45px; }
+        
         .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
         .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
         .entrata { color: var(--accent-green) !important; font-weight: bold; }
@@ -40,8 +45,8 @@
         .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
         .valore-saldo { font-size: 3rem; font-weight: 800; letter-spacing: -1px; }
         .box-metrica { background: rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 12px; flex: 1; font-size: 0.8rem; margin: 0 5px; border: 1px solid var(--border-color); }
-        .alert-negativo, .alert-ricorrenti { padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; border: 1px solid transparent; }
-        .alert-negativo { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: var(--accent-red); }
+        .alert-negativo, .alert-ricorrenti { padding: 8px 16px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; border: 1px solid transparent; width: 100%; text-align: center; }
+        .alert-negativo { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: var(--accent-red); }
         .alert-ricorrenti { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border-color: var(--accent-orange); }
         .note-container { border-left: 6px solid var(--accent-orange) !important; border-radius: 20px; padding: 15px; }
         #note-area { background: var(--bg-input) !important; color: var(--text-main) !important; font-style: italic; min-height: 180px; border-radius: 12px; padding: 15px; border: 1px solid var(--border-color) !important; width: 100%; resize: none; }
@@ -53,9 +58,10 @@
 </head>
 <body>
 
+    <!-- SCHERMATA LOGIN CON LOGO BANCA SVG INLINE IMMUNE AL MANCATO SEGNALE -->
     <div id="login-screen">
         <div class="login-box">
-            <img src="https://img.icons8.com/fluency/192/bank.png" style="width: 80px; height: 80px;" class="mb-4" alt="Banca">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 80px; height: 80px;" class="mb-4 text-info"><rect x="2" y="20" width="20" height="2" rx="0.5"/><path d="M12 2L2 7v3h20V7L12 2zM4 10v10M9 10v10M15 10v10M20 10v10"/></svg>
             <h2 class="mb-4 fw-bold text-white">Gestionale</h2>
             <input type="password" id="password-input" class="form-control form-control-lg mb-4 text-center fw-bold pin-input" placeholder="•••••" inputmode="numeric" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
@@ -67,7 +73,7 @@
         <div class="login-box" style="padding: 25px 20px; border-radius: 28px; background-color: #1e293b; max-width: 360px;">
             <div class="d-flex justify-content-center align-items-center mb-4">
                 <h3 class="fw-bold text-white m-0">Sincronizzazione</h3>
-                <span style="font-size: 1.4rem; margin-left: 8px;">🏦</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px; margin-left: 8px;" class="text-info"><rect x="2" y="20" width="20" height="2" rx="0.5"/><path d="M12 2L2 7v3h20V7L12 2zM4 10v10M9 10v10M15 10v10M20 10v10"/></svg>
             </div>
             <div class="card p-4 border-0 mb-4" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
                 <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
@@ -115,8 +121,8 @@
                 </div>
                 <div class="note-container mb-4">
                     <h6 class="fw-bold mb-2" style="color: var(--accent-orange);">📌 Appunti Veloci</h6>
-                    <textarea id="note-area" placeholder="Scrivi qui..." onblur="saveNotes()"></textarea>
-                    <div class="text-end mt-1"><small id="note-status" style="color: var(--accent-orange);"></small></div>
+                    <textarea id="note-area" placeholder="Scrivi qui..." oninput="handleNoteInput()"></textarea>
+                    <div class="text-end mt-1"><small id="note-status" style="color: var(--accent-orange); font-weight: bold; font-size:0.75rem;"></small></div>
                 </div>
             </div>
 
@@ -164,13 +170,13 @@
                 </div>
                 <div class="card p-4 shadow-sm border-0 rounded-4 mb-4 border">
                     <h5 class="text-success fw-bold">Fondo Personale</h5><h2 id="tot-personale-sec" class="text-success mb-3 fw-bold">€ 0.00</h2>
-                    <div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success px-4 fw-bold">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
+                    <div class="input-group mb-3"><input type="number" id="fondo-personale-aggiungi" class="form-control" placeholder="Aggiungi..." inputmode="decimal"><button onclick="modificaFondi('personale', 'aggiungi')" class="btn btn-success px-4 fw-bold">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-personale-preleva" class="form-control" placeholder="Preleva..." inputmode="decimal"><button onclick="modificaFondi('personale', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
                 <div class="card p-4 shadow-sm border-0 rounded-4 mb-3 border">
                     <h5 class="fw-bold" style="color: var(--accent-blue);">Fondo Risparmi</h5><h2 id="tot-risparmi-sec" class="mb-3 fw-bold" style="color: var(--accent-blue);">€ 0.00</h2>
-                    <div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control" placeholder="Aggiungi..."><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary px-4 fw-bold text-dark" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">V</button></div>
-                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control" placeholder="Preleva..."><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
+                    <div class="input-group mb-3"><input type="number" id="fondo-risparmi-aggiungi" class="form-control" placeholder="Aggiungi..." inputmode="decimal"><button onclick="modificaFondi('risparmi', 'aggiungi')" class="btn btn-primary px-4 fw-bold text-dark" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">V</button></div>
+                    <div class="input-group"><input type="number" id="fondo-risparmi-preleva" class="form-control" placeholder="Preleva..." inputmode="decimal"><button onclick="modificaFondi('risparmi', 'preleva')" class="btn btn-danger px-4 fw-bold">X</button></div>
                 </div>
             </div>
 
@@ -183,7 +189,7 @@
                     <hr style="border-color: var(--border-color);">
                     <h5 class="mt-2" style="color: var(--accent-orange);">❄️ Chiusura Bilancio / Archivio a Freddo</h5>
                     <div class="input-group mb-2">
-                        <input type="number" id="archive-year-input" class="form-control" placeholder="Anno limite (es. 2025)">
+                        <input type="number" id="archive-year-input" class="form-control" placeholder="Anno limite (es. 2025)" inputmode="numeric">
                         <button onclick="archiviaAFreddo()" class="btn btn-warning text-dark fw-bold px-4">Archivia</button>
                     </div>
                 </div>
@@ -199,13 +205,14 @@
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
     </div>
 
-    <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
-    <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
+    <!-- WINDOW MODALS COSTRUTTORI CON STRUTTURA DECIMALE FORZATA -->
+    <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
+    <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" inputmode="numeric" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
     <datalist id="causali-rapide"><option value="Assicurazione"></option><option value="Benzina"></option><option value="Bolletta gas"></option><option value="Bolletta luce"></option><option value="Bollo"></option><option value="Bonifico da"></option><option value="Bonifico in favore di"></option><option value="Giroconto"></option><option value="GPL"></option><option value="Prelievo banca"></option><option value="Supermercato"></option><option value="Tari"></option><option value="Versamento assegno"></option><option value="Versamento contanti"></option></datalist>
 
     <script>
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
-        let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false;
+        let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false; let isSubmitting = false; let noteTimeout;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -231,6 +238,7 @@
 
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(reg => { reg.update(); }).catch(e => console.error(e)); }
 
+        // OTTIMIZZAZIONE COMPILAZIONE: Esegue la pulizia numerica ad anello una sola volta all'avvio
         function sanitizeDatabase() {
             try {
                 if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
@@ -273,12 +281,7 @@
                             populateAnnoFiltri(); naviga('home');
                         } else {
                             const errData = await response.json().catch(() => ({}));
-                            if (response.status === 503) {
-                                document.getElementById('login-error').innerHTML = "⚠️ " + (errData.error || "Server occupato.");
-                            } else {
-                                document.getElementById('login-error').innerHTML = "⚠️ Sincronizzazione fallita.";
-                            }
-                            document.getElementById('login-error').setTimeout = 3000;
+                            document.getElementById('login-error').innerHTML = "⚠️ " + (errData.error || "Errore sincronizzazione.");
                             document.getElementById('login-error').classList.remove('hidden');
                         }
                     } catch (e) { document.getElementById('login-error').innerHTML = "⚠️ Server offline."; document.getElementById('login-error').classList.remove('hidden'); }
@@ -327,18 +330,25 @@
         }
 
         function logout() { if (!isServerMode && dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => location.reload(), 1500); } else { location.reload(); } }
-        function saveNotes() { const c = document.getElementById('note-area').value; if (db.note !== c) { db.note = c; saveData(); } }
+        
+        // DEBOUNCE DI SICUREZZA 1.5s PER SCRITTURA APPUNTI VELOCI
+        function handleNoteInput() {
+            const status = document.getElementById('note-status');
+            if (status) status.innerText = "✍️ Scrittura...";
+            clearTimeout(noteTimeout);
+            noteTimeout = setTimeout(() => {
+                const c = document.getElementById('note-area').value;
+                if (db.note !== c) { db.note = c; saveData(); if (status) status.innerText = "💾 Salvato!"; setTimeout(() => { if(status) status.innerText=""; }, 1500); }
+            }, 1500);
+        }
 
         function updateDashboard() {
             let saldo = 0; let totaleCartaMese = 0; let saldoContabile = 0; const oggi = new Date(); const localToday = getLocalDateString();
             
-            db.fondi.personale = cleanNumeric(db.fondi.personale);
-            db.fondi.risparmi = cleanNumeric(db.fondi.risparmi);
-
             db.transazioni.forEach(t => {
                 if (t && !t.isFondoTransfer && typeof t.data === 'string') {
                     const parts = t.data.split('-'); if (parts.length !== 3) return;
-                    let imp = cleanNumeric(t.importo);
+                    let imp = t.importo;
                     
                     if (t.sezione === 'conto') {
                         if (t.tipo === 'entrata') saldo += imp; else saldo -= imp;
@@ -357,6 +367,25 @@
             if (document.getElementById('tot-personale-sec')) { document.getElementById('tot-personale-sec').innerText = "€ " + db.fondi.personale.toFixed(2); }
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
             document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati aggiornati al: --/-- ore --:--";
+            
+            // CONDIZIONALI MILITARI DI INIEZIONE BANNER ALLERTE E PROMEMORIA
+            const alertContainer = document.getElementById('alert-container');
+            if (alertContainer) {
+                alertContainer.innerHTML = '';
+                if (saldo < 0) { alertContainer.innerHTML += `<div class="alert-negativo d-block mb-2">⚠️ ATTENZIONE: CONTO IN NEGATIVO</div>`; }
+                
+                // AVVISO BILANCIO RIGIDAMENTE CIRCOSCRITTO AL PC (MARZO = INDEX 2)
+                if (isServerMode && oggi.getMonth() === 2) {
+                    alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(56,189,248,0.1); color:var(--accent-blue); border-color:var(--accent-blue);">❄️ PROMEMORIA PC: Esegui l'archiviazione a freddo dell'anno precedente.</div>`;
+                }
+                
+                // AVVISO RICORRENTI ABILITATO ESCLUSIVAMENTE DAL GIORNO 27 IN POI
+                if (oggi.getDate() >= 27) {
+                    const meseCorrenteFirma = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}`;
+                    let mancano = db.ricorrenti.some(r => r.ultima_esecuzione !== meseCorrenteFirma);
+                    if (mancano) { alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2">🔁 PROMEMORIA RICORRENTI: Ci sono scadenze mensili da inserire.</div>`; }
+                }
+            }
             checkRicorrentiStatus();
         }
 
@@ -381,7 +410,8 @@
         function apriModalTransazione() { document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = ''; document.getElementById('trans-data').value = getLocalDateString(); const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
 
         function addTransaction(e) {
-            e.preventDefault(); const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
+            e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
+            const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
             if (isNaN(importoInput) || importoInput <= 0) return;
             
             let vecchia = id ? db.transazioni.find(x => x.id === id) : null;
@@ -395,7 +425,8 @@
             saveData(); renderTable(activeViewMode); bootstrap.Modal.getInstance(document.getElementById('modalTransazione')).hide();
         }
 
-        function renderTable(mode) {
+        // AGGIORNAMENTO MILITARE: Interroga asincronamente i file di archivio del server senza ingolfare il Pixel
+        async function renderTable(mode) {
             activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = ''; const oggi = new Date(); const localToday = getLocalDateString();
             document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
             
@@ -408,6 +439,21 @@
             let dati = db.transazioni.filter(t => t && t.sezione === activeSection);
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
+                
+                // ROUTINE DI INTERROGAZIONE ASINCRONA DEGLI ANNI PASSATI
+                if (isServerMode && sA < oggi.getFullYear()) {
+                    try {
+                        const res = await fetch(`/api/archive_view?year=${sA}`);
+                        if (res.ok) {
+                            let archivioEsterno = await res.json();
+                            if (Array.isArray(archivioEsterno)) {
+                                archivioEsterno.forEach(x => { x.importo = cleanNumeric(x.importo); });
+                                dati = archivioEsterno.filter(t => t && t.sezione === activeSection);
+                            }
+                        }
+                    } catch(e) { console.error("Impossibile connettersi all'archivio freddo server", e); }
+                }
+                
                 dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; });
                 if (searchVal) dati = dati.filter(t => t.causale && t.causale.toLowerCase().includes(searchVal));
             } else {
@@ -417,7 +463,7 @@
             let boxTotale = document.getElementById('totale-archivio-box');
             if (boxTotale) {
                 if (mode === 'archivio' && activeSection === 'carta') {
-                    let totArchivio = dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? cleanNumeric(t.importo) : -cleanNumeric(t.importo)), 0);
+                    let totArchivio = dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? t.importo : -t.importo), 0);
                     boxTotale.classList.remove('hidden'); document.getElementById('totale-archivio-val').innerText = '€ ' + totArchivio.toFixed(2);
                 } else { boxTotale.classList.add('hidden'); }
             }
@@ -436,7 +482,7 @@
                 htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
-                    <td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${cleanNumeric(t.importo).toFixed(2)}</td>
+                    <td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td>
                     <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
                 </tr>`;
             });
@@ -461,7 +507,7 @@
             const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
             [...db.ricorrenti].reverse().forEach(r => { 
                 if (r) {
-                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${cleanNumeric(r.importo).toFixed(2)}</td><td class="text-end"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
+                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
                 }
             }); 
         }
@@ -470,7 +516,8 @@
         function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         
         function addRicorrente(e) { 
-            e.preventDefault(); const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
+            e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
+            const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
             const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
             if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } 
             else { db.ricorrenti.push(r); }
@@ -506,18 +553,14 @@
         function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
         function importaFileBackup() { const file = document.getElementById('file-import').files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); } catch(err) { alert("File non valido"); } }; r.readAsText(file); }
         
-        // FIX COMPILAZIONE ANNI TEMPLATE LITERALS
         function populateAnnoFiltri() { 
             const s = document.getElementById('filter-anno'); 
             if (s) { 
                 s.innerHTML = ''; 
                 const c = new Date().getFullYear(); 
-                for (let i = c; i >= c - 5; i--) {
-                    s.innerHTML += `<option value="${i}">${i}</option>`; 
-                }
+                for (let i = c; i >= c - 5; i--) { s.innerHTML += `<option value="${i}">${i}</option>`; }
             } 
-            let pM = new Date().getMonth() + 1; 
-            const sM = document.getElementById('filter-mese'); 
+            let pM = new Date().getMonth() + 1; const sM = document.getElementById('filter-mese'); 
             if (sM) sM.value = pM.toString().padStart(2, '0'); 
         }
         
@@ -534,7 +577,7 @@
                     const parts = t.data.split('-'); const tAnno = parseInt(parts[0]); const tMese = parseInt(parts[1]);
                     let con = false;
                     if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
-                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? cleanNumeric(t.importo) : -cleanNumeric(t.importo)); }
+                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
                 }
             });
             if (modificate) { 
