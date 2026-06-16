@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- === BLOCCO INTEGRALE CACHE GRAFICA DISPOSITIVI === -->
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -374,7 +375,6 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
-        // === SENSORE AUTOMATICO AMBIENTE REALE LAN ===
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -651,6 +651,7 @@
 
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
+        function delT(id) { if (confirm('Eliminare operazione?')) { const t = db.transazioni.find(x => x.id === id); if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; } db.transazioni = db.trans物件r = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); } }
         function delT(id) { if (confirm('Eliminare operazione?')) { const t = db.transazioni.find(x => x.id === id); if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; } db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); } }
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
@@ -692,7 +693,11 @@
                 let m = mC; let y = aC; if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } } 
                 let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
                 const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
-                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
+                if (r.ultima_esecuzione !== meseCorrenteFirma) { 
+                    // CORRETTO IL TYPO DA category A categoria
+                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false }); 
+                    r.ultima_esecuzione = meseCorrenteFirma; ins++; 
+                } 
             }); 
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
