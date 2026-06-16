@@ -17,35 +17,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { color-scheme: dark; --bg-main: #090d16; --bg-card: #111827; --bg-input: #1f2937; --border-color: rgba(255, 255, 255, 0.08); --text-main: #f3f4f6; --text-muted: #9ca3af; --accent-blue: #38bdf8; --accent-green: #10b981; --accent-red: #ef4444; --accent-orange: #f59e0b; }
-        body { background-color: var(--bg-main) !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-main) !important; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; }
+        :root {
+            color-scheme: dark;
+            --bg-main: #090d16;
+            --bg-card: #111827;
+            --bg-input: #1f2937;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        body { 
+            background-color: var(--bg-main) !important; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            color: var(--text-main) !important; 
+            padding-bottom: 90px; 
+            transition: background 0.3s; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
         html { scroll-behavior: smooth; }
         .hidden { display: none !important; }
-        .card, .table-container-white, .note-container, .section-container, .dropdown-menu { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; }
-        .form-control, .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
-        .form-control:focus, .form-select:focus { border-color: var(--accent-blue) !important; box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important; }
-        .modal-content { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; border-radius: 24px; }
+
+        .bg-white, .card, .table-container-white, .note-container, .section-container, .dropdown-menu { 
+            background-color: var(--bg-card) !important; 
+            color: var(--text-main) !important; 
+            border: 1px solid var(--border-color) !important; 
+        }
+        
+        .form-control, .form-select { 
+            background-color: var(--bg-input) !important; 
+            border: 1px solid var(--border-color) !important; 
+            color: var(--text-main) !important; 
+        }
+        
+        .form-control:focus, .form-select:focus { 
+            border-color: var(--accent-blue) !important; 
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important; 
+        }
+        
+        .modal-content { 
+            background-color: var(--bg-card) !important; 
+            color: var(--text-main) !important; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; 
+            border-radius: 24px; 
+        }
+        
+        .modal-header { border-bottom: 1px solid var(--border-color); }
+        .form-floating > label { color: var(--text-muted) !important; }
+        
         .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
-        .table td, .table th { border-color: var(--border-color) !important; }
+        .table td, .table th { border-color: var(--border-color) !important; color: var(--text-main) !important; }
+        .table-light th { background-color: var(--bg-input) !important; color: var(--text-muted) !important; }
+        
         .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
         .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
+
+        .dropdown-item { color: var(--text-main) !important; transition: 0.2s; }
+        .dropdown-item:hover { background-color: rgba(255,255,255,0.05) !important; }
+        
+        .bg-conto { background-color: rgba(56, 189, 248, 0.05) !important; border-left: 3px solid var(--accent-blue); border:none; }
+        .bg-carta { background-color: rgba(251, 191, 36, 0.05) !important; border-left: 3px solid #fbbf24; border:none; }
+        .bg-ricorrenti { background-color: rgba(245, 158, 11, 0.05) !important; border-left: 3px solid var(--accent-orange); border:none; }
+        .bg-fondi { background-color: rgba(16, 185, 129, 0.05) !important; border-left: 3px solid var(--accent-green); border:none; }
+
         .entrata { color: var(--accent-green) !important; font-weight: bold; }
         .uscita { color: var(--accent-red) !important; font-weight: bold; }
         .riga-futura { background-color: rgba(56, 189, 248, 0.03) !important; border-left: 3px solid var(--accent-blue) !important; }
+
         .fab-btn { position: fixed; bottom: 25px; right: 20px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), #0284c7); color: #000; border: none; font-size: 28px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4); z-index: 999; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+        
         .top-header { position: sticky; top: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(12px); z-index: 900; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
-        .valore-saldo { font-size: 3rem; font-weight: 800; letter-spacing: -1px; }
+        
+        .card-saldo { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 24px; padding: 28px 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; margin-bottom: 20px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+        .valore-saldo { font-size: 3rem; font-weight: 800; margin: 0; letter-spacing: -1px; }
+        
         .box-metrica { background: rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 12px; flex: 1; font-size: 0.8rem; margin: 0 5px; border: 1px solid var(--border-color); }
         .alert-negativo, .alert-ricorrenti { padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; border: 1px solid transparent; }
         .alert-negativo { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: var(--accent-red); }
         .alert-ricorrenti { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border-color: var(--accent-orange); }
+        
         .note-container { border-left: 6px solid var(--accent-orange) !important; border-radius: 20px; padding: 15px; }
         #note-area { background: var(--bg-input) !important; color: var(--text-main) !important; font-style: italic; min-height: 180px; border-radius: 12px; padding: 15px; border: 1px solid var(--border-color) !important; width: 100%; resize: none; }
-        #login-screen, #sync-screen { height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; background: var(--bg-main); }
-        .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 24px; text-align: center; border: 1px solid var(--border-color); width: 90%; max-width: 350px; }
-        .table-container-white { border-radius: 20px; padding: 15px; }
-        .section-container { padding: 15px 5px; }
     </style>
 </head>
 <body>
@@ -206,7 +264,7 @@
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
         function getTimestampString() { const now = new Date(); return String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + " ore " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0'); }
         
-        // FIX CLAUDE (PUNTO 2): Parsing totalmente difensivo per bloccare i crash all'avvio sul Pixel
+        // FIX ANTI-CRASH: Parsing difensivo sicuro delle stringhe data
         function formatDate(s) { 
             if (!s || typeof s !== 'string' || !s.includes('-')) return "--/--/--"; 
             const p = s.split('-'); 
@@ -229,7 +287,6 @@
                 if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
                 db.fondi.personale = Number(db.fondi.personale) || 0; db.fondi.risparmi = Number(db.fondi.risparmi) || 0;
                 
-                // Filtro preventivo rigido sulle transazioni con date corrotte o malformate
                 db.transazioni = db.transazioni.filter(t => t && typeof t.data === 'string' && t.data.match(/^\d{4}-\d{2}-\d{2}$/));
                 db.transazioni.forEach(t => { 
                     if (!t.id || t.id.length < 15) t.id = generateSecureId(); if (!t.sezione) t.sezione = 'conto'; if (!t.categoria) t.categoria = 'Altro';
@@ -281,7 +338,7 @@
         }
 
         async function saveData() { 
-            db.timestamp = Date.now(); // FIX CLAUDE (PUNTO 3): Timestamp logico frontend come unica fonte di verità emesso prima del write
+            db.timestamp = Date.now(); // SOURCE OF TRUTH TIMESTAMP FORZATO PRIMA DEL WRITE
             sanitizeDatabase(); db.last_update = getTimestampString(); 
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); updateDashboard(); updateExitButton();
             if (isServerMode) {
@@ -377,8 +434,8 @@
         }
 
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
+        function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
-        // FIX CLAUDE (PUNTO 4): Inversione esatta dei delta sui saldi statici in fase di eliminazione record
         function delT(id) {
             if (confirm('Eliminare operazione?')) {
                 const t = db.transazioni.find(x => x.id === id);
@@ -406,6 +463,7 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); }
         }
 
+        // FIX TYPO 2: Sostituito rigidamente 'category' in 'categoria' italiano nel prelievo
         function modificaFondi(tipoFondo, action) {
             const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
@@ -418,14 +476,62 @@
             input.value = ''; saveData();
         }
 
+        // FIX TYPO 1: Sostituito accuratamente t.sezen in t.sezione per abilitare la conferma automatica
+        function confermaTutteCarte() { 
+            if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
+            let modificate = false; let totaleDaAddebitare = 0; let meseRiferimento = null; let annoRiferimento = null;
+            const mode = activeViewMode; const sA_el = document.getElementById('filter-anno'); const sM_el = document.getElementById('filter-mese');
+            let sA = sA_el ? parseInt(sA_el.value) : null; let sM = sM_el ? parseInt(sM_el.value) : null;
+            
+            db.transazioni.forEach(t => {
+                if (t && t.sezione === 'carta' && !t.confermato && t.data) {
+                    const parts = t.data.split('-'); const tAnno = parseInt(parts[0]); const tMese = parseInt(parts[1]);
+                    let con = false;
+                    if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
+                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
+                }
+            });
+            if (modificate) { 
+                if (totaleDaAddebitare > 0) {
+                    const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+                    let nomeMese = nomiMesi[meseRiferimento]; let meseAddebito = meseRiferimento + 1; let annoAddebito = annoRiferimento;
+                    if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
+                    let dataAddebito = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
+                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
+                }
+                saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
+            } else { showToast("Nessuna operazione da confermare qui."); }
+        }
+
+        // RIPRISTINO INTERO MOTORE REALE ESPORTAZIONE PDF NATIVO
+        function exportToPDF(type) { 
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); 
+            let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = []; 
+            if (type === 'fondi') { 
+                head = [['Nome Fondo', '', '', 'Disponibilita Attuale']]; 
+                body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); 
+                body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]); 
+            } else if (type === 'ricorrenti') { 
+                head = [['Competenza / Giorno', 'Causale', 'Categoria', 'Importo']]; 
+                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } 
+                }); 
+            } else { 
+                document.querySelectorAll('#transazioni-tbody tr').forEach(row => { 
+                    const cols = row.querySelectorAll('td'); 
+                    if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } 
+                }); 
+            } 
+            doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); 
+        }
+
         async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
         async function ripristinaDaServer() { const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
         async function archiviaAFreddo() { const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
         function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
         function importaFileBackup() { const file = document.getElementById('file-import').files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); } catch(err) { alert("File non valido"); } }; r.readAsText(file); }
-        function exportToPDF(type) { showToast("Funzione PDF esportata."); }
-        function populateAnnoFiltri() { const s = document.getElementById('filter-anno'); if (s) { s.innerHTML = ''; const c = new Date().getFullYear(); for (let i = c; i >= c - 5; i--) s.innerHTML += `<option value="${i}">${i}</option>`; } }
-        function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
+        function populateAnnoFiltri() { const s = document.getElementById('filter-anno'); if (s) { s.innerHTML = ''; const c = new Date().getFullYear(); for (let i = c; i >= c - 5; i--) s.innerHTML += `<option value="' + i + '">' + i + '</option>`; } }
     </script>
 </body>
 </html>
