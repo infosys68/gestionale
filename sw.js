@@ -1,4 +1,5 @@
-const CACHE_NAME = 'gestionale-cache-v4';
+// Elevato a v5-final per invalidare le cache rotte sui dispositivi mobili ed evitare schermate bianche
+const CACHE_NAME = 'gestionale-cache-v5-final'; 
 const urlsToCache = [
   './',
   './manifest.json',
@@ -22,6 +23,7 @@ self.addEventListener('activate', event => {
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
+            // Riconosce ed elimina le cache v4 o precedenti instabili
             if (cacheName !== CACHE_NAME) {
               return caches.delete(cacheName);
             }
@@ -33,6 +35,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Ignora categoricamente il traffico delle API locali per prevenire il congelamento dei dati
   if (event.request.url.includes('/api/')) {
     return;
   }
