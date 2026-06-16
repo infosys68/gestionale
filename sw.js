@@ -1,5 +1,5 @@
-// Forzato a v6-production per pulire la memoria locale del Pixel da frammenti instabili
-const CACHE_NAME = 'gestionale-cache-v6-production'; 
+// FORZATO IL BUMP A V7 PER EVINCERE LA VECCHIA CACHE GRAFICA SUL PIXEL
+const CACHE_NAME = 'gestionale-cache-v7-titanium'; 
 const urlsToCache = [
   './',
   './manifest.json',
@@ -34,7 +34,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Ignora categoricamente il traffico delle API locali del server per prevenire congelamenti
+  // ISOLAMENTO RIGIDO: Il traffico delle API non deve MAI essere intercettato o storpiato dalla cache
   if (event.request.url.includes('/api/')) {
     return;
   }
