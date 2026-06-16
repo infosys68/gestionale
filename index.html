@@ -143,7 +143,7 @@
                 
                 <div class="d-flex justify-content-center mb-4">
                     <svg viewBox="0 0 40 40" width="70" height="70" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-                      <path fill="#FFC107" d="M13.8 28.5L6.6 16 l7.2-12.5h14.4L21 16z"/>
+                      <path fill="#FFC107" d="M13.8 28.5L6.6 16l7.2-12.5h14.4L21 16z"/>
                       <path fill="#1976D2" d="M13.8 28.5h14.4L35.4 16H21z"/>
                       <path fill="#4CAF50" d="M28.2 28.5L35.4 16 28.2 3.5H13.8L21 16z"/>
                     </svg>
@@ -641,7 +641,7 @@
             }
 
             let htmlRighe = '';
-            // ORDINAMENTO OTTIMIZZATO SENZA PIÙ L'USO DEL COSTRUTTORE NEW DATE()
+            // ORDINAMENTO VELOCE E SICURO IMMUNE DAI FUSI ORARI
             dati.sort((a,b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = ''; let st = '';
                 if (activeSection === 'carta') {
@@ -665,14 +665,22 @@
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
-        // === CORRETTO COMPLETA INTEGRIZZAZIONE RIGA ELIMINA TRANSAZIONE ===
+        // === CORREZIONE COMPLETA RIGIDA DELLA CANCELLAZIONE (delT SENZA DOPPIONI O BOZZE) ===
         function delT(id) { 
             if (confirm('Eliminare operazione?')) { 
                 const t = db.transazioni.find(x => x.id === id);
-                if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; }
-                db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); 
+                if (t && t.isFondoTransfer) { 
+                    const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); 
+                    if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; 
+                    if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; 
+                }
+                db.transazioni = db.transazioni.filter(x => x.id !== id); 
+                saveData(); 
+                renderTable(activeViewMode); 
+                showToast("Eliminata e Fondi ricalcolati"); 
             } 
         }
+
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { 
@@ -725,8 +733,25 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
         
-        function modificaFondi(tipoFondo, wiring ACTION) { const input = document.getElementById("fondo-" + tipoFondo + "-" + wiring ACTION); const valore = parseFloat(input.value); if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); if (wiring ACTION === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } input.value = ''; saveData(); showToast("Fondi aggiornati"); }
-        function modificaFondi(tipoFondo, azione) { const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); const valore = parseFloat(input.value); if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } input.value = ''; saveData(); showToast("Fondi aggiornati"); }
+        // === RIGIDAMENTE CORRETTA LA GESTIONE DEI FONDI SENZA RIGHE SPURIE ===
+        function modificaFondi(tipoFondo, azione) { 
+            const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); 
+            const valore = parseFloat(input.value); 
+            if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } 
+            const oggi = getLocalDateString(); 
+            if (azione === 'aggiungi') { 
+                db.fondi[tipoFondo] += valore; 
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
+            } else { 
+                if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } 
+                db.fondi[tipoFondo] -= valore; 
+                db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); 
+            } 
+            input.value = ''; 
+            saveData(); 
+            showToast("Fondi aggiornati"); 
+        }
+
         function esportaFileBackup() { const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); }
         function importaFileBackup() { const file = document.getElementById('file-import'); if (!file.files[0]) return showToast("⚠️ Seleziona un file!"); const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); dataChanged = true; updateExitButton(); updateDashboard(); showToast("Database Ripristinato!"); } catch(err) { showToast("⚠️ File JSON non valido"); } }; r.readAsText(file.files[0]); }
         function exportToPDF(type) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase(); let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = []; if (type === 'fondi') { head = [['Nome Fondo', '', '', 'Disponibilita Attuale']]; body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]); } else if (type === 'ricorrenti') { head = [['Competenza / Giorno', 'Causale', 'Categoria', 'Importo']]; document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 4) { let tempDate = cols[0].innerText.replace(/\n/g, ' '); body.push([tempDate, cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } }); } else { document.querySelectorAll('#transazioni-tbody tr').forEach(row => { const cols = row.querySelectorAll('td'); if (cols.length >= 3) { body.push([cols[0].innerText.split('\n')[0], cols[1].innerText.split('\n')[0], cols[1].innerText.split('\n')[1] || '', cols[2].innerText]); } }); } doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } }); doc.save("Report_" + type + ".pdf"); }
