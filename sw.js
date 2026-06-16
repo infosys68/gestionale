@@ -1,5 +1,5 @@
-// Elevato a v5-final per invalidare le cache rotte sui dispositivi mobili ed evitare schermate bianche
-const CACHE_NAME = 'gestionale-cache-v5-final'; 
+// Forzato a v6-production per pulire la memoria locale del Pixel da frammenti instabili
+const CACHE_NAME = 'gestionale-cache-v6-production'; 
 const urlsToCache = [
   './',
   './manifest.json',
@@ -23,7 +23,6 @@ self.addEventListener('activate', event => {
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            // Riconosce ed elimina le cache v4 o precedenti instabili
             if (cacheName !== CACHE_NAME) {
               return caches.delete(cacheName);
             }
@@ -35,7 +34,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Ignora categoricamente il traffico delle API locali per prevenire il congelamento dei dati
+  // Ignora categoricamente il traffico delle API locali del server per prevenire congelamenti
   if (event.request.url.includes('/api/')) {
     return;
   }
