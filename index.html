@@ -374,7 +374,6 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
-        // === SENSORE AUTOMATICO AMBIENTE REALE LAN ===
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -565,7 +564,7 @@
             
             if (document.getElementById('tot-personale-sec')) { document.getElementById('tot-personale-sec').innerText = "€ " + db.fondi.personale.toFixed(2); }
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
-            if (db.last_update) { document.getElementById('last-update-reg').innerText = "Dati aggiornati al: " + db.last_update; } else { document.getElementById('last-update-reg').innerText = "Dati updated al: --/-- ore --:--"; }
+            if (db.last_update) { document.getElementById('last-update-reg').innerText = "Dati aggiornati al: " + db.last_update; } else { document.getElementById('last-update-reg').innerText = "Dati aggiornati al: --/-- ore --:--"; }
             checkRicorrentiStatus();
         }
 
@@ -705,9 +704,9 @@
                     const tAnno = parseInt(parts[0]);
                     const tMese = parseInt(parts[1]);
                     
-                    let confermaQuesta = false;
-                    if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { confermaQuesta = true; meseRiferimento = sM; annoRiferimento = sA; } }
-                    if (confermaQuesta) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
+                    let永久 con = false;
+                    if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
+                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
                 }
             });
             
