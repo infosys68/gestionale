@@ -270,12 +270,30 @@
             <div id="backup-section" class="section-container hidden">
                 <h3 class="mb-4 fw-bold text-white px-2">⚙️ Dati e Sincronizzazione</h3>
                 
+                <div id="pc-history-block" class="card p-4 shadow-sm border-0 rounded-4 border mb-4 hidden">
+                    <h5 style="color: var(--accent-blue);">📜 Storico Backups del Server</h5>
+                    <p class="text-muted small">Seleziona un punto di ripristino memorizzato su Google Drive dal server Python locale.</p>
+                    <div class="mb-3">
+                        <select id="select-backups-server" class="form-select rounded-pill"></select>
+                    </div>
+                    <button onclick="ripristinaDaServer()" class="btn btn-outline-info w-100 rounded-pill fw-bold mb-4">Ripristina Punto Selezionato</button>
+                    
+                    <hr style="border-color: var(--border-color);">
+                    
+                    <h5 class="mt-2" style="color: var(--accent-orange);">❄️ Chiusura Bilancio / Archivio a Freddo</h5>
+                    <p class="text-muted small">Sposta le transazioni degli anni passati in un file separato a freddo su Drive per alleggerire il database corrente dell'applicazione.</p>
+                    <div class="input-group mb-2">
+                        <input type="number" id="archive-year-input" class="form-control" placeholder="Anno limite (es. 2025)">
+                        <button onclick="archiviaAFreddo()" class="btn btn-warning text-dark fw-bold px-4">Archivia</button>
+                    </div>
+                </div>
+
                 <div class="card p-4 shadow-sm border-0 rounded-4 border mb-4">
-                    <h5 style="color: var(--accent-blue);">💾 Esporta Database</h5>
-                    <p class="text-muted small">Scarica il file aggiornato per salvarlo in DriveSyncFiles.</p>
+                    <h5 style="color: var(--accent-green);">💾 Esporta Database Manuale</h5>
+                    <p class="text-muted small">Scarica il file json aggiornato sul dispositivo corrente.</p>
                     <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica Backup</button>
                     <hr style="border-color: var(--border-color);">
-                    <h6 class="mt-2 text-white">Ripristina da File Salvato (Forzatura Manuale)</h6>
+                    <h6 class="mt-2 text-white">Ripristina da File Locale (Forzatura Manuale)</h6>
                     <input type="file" id="file-import" class="form-control mb-3" accept=".json">
                     <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
                 </div>
@@ -594,7 +612,14 @@
                     renderTable('corrente');
                 } else if (sezione === 'ricorrenti') { document.getElementById('ricorrenti-section').classList.remove('hidden'); renderRenovations(); } 
                 else if (sezione === 'fondi') { document.getElementById('fondi-section').classList.remove('hidden'); } 
-                else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); }
+                else if (sezione === 'backup') { 
+                    document.getElementById('backup-section').classList.remove('hidden'); 
+                    // SE SIAMO SU PC, SBLOCCA IL PANNELLO INTERATTIVO DELLO STORICO SERVER
+                    if (isServerMode) {
+                        document.getElementById('pc-history-block').classList.remove('hidden');
+                        caricaStoricoBackups();
+                    }
+                }
             }
         }
 
@@ -758,6 +783,79 @@
             input.value = ''; 
             saveData(); 
             showToast("Fondi aggiornati"); 
+        }
+
+        // === REINSERITE LE LOGICHE DI INTERFACCIA STORICO BACKUP E ARCHIVIO A FREDDO DA PC ===
+        async function caricaStoricoBackups() {
+            try {
+                const response = await fetch('/api/backups');
+                if (response.ok) {
+                    const backups = await response.json();
+                    const select = document.getElementById('select-backups-server');
+                    select.innerHTML = '';
+                    if (backups.length === 0) {
+                        select.innerHTML = '<option value="">Nessun punto di ripristino su Drive</option>';
+                        return;
+                    }
+                    backups.forEach(f => {
+                        select.innerHTML += `<option value="${f}">${f}</option>`;
+                    });
+                }
+            } catch(e) { console.log("Errore caricamento storico", e); }
+        }
+
+        async function ripristinaDaServer() {
+            const filename = document.getElementById('select-backups-server').value;
+            if (!filename) return showToast("⚠️ Seleziona un file!");
+            if (confirm(`Ripristinare il backup ${filename}? I dati correnti del PC e del Cloud verranno sovrascritti.`)) {
+                try {
+                    const response = await fetch('/api/restore', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: filename })
+                    });
+                    if (response.ok) {
+                        showToast("Ripristino completato con successo! Ricarico...");
+                        setTimeout(() => { location.reload(); }, 1500);
+                    } else { throw new Error(); }
+                } catch(e) { showToast("⚠️ Errore durante il ripristino server"); }
+            }
+        }
+
+        async function archiviaAFreddo() {
+            const annoInput = document.getElementById('archive-year-input').value;
+            const anno = parseInt(annoInput);
+            if (isNaN(anno) || anno < 2000 || anno > new Date().getFullYear()) {
+                return showToast("⚠️ Inserisci un anno numerico valido!");
+            }
+            
+            const daArchiviare = db.transazioni.filter(t => {
+                const tAnno = parseInt(t.data.split('-')[0]);
+                return tAnno <= anno;
+            });
+            
+            if (daArchiviare.length === 0) {
+                return showToast("Nessuna transazione trovata da poter isolare.");
+            }
+            
+            if (confirm(`Spostare definitivamente ${daArchiviare.length} transazioni fino al ${anno} nell'archivio storico freddo su Drive? Verranno rimosse da questa schermata.`)) {
+                try {
+                    const response = await fetch('/api/archive', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ year: anno, data: daArchiviare })
+                    });
+                    if (response.ok) {
+                        db.transazioni = db.transazioni.filter(t => {
+                            const tAnno = parseInt(t.data.split('-')[0]);
+                            return tAnno > anno;
+                        });
+                        await saveData();
+                        showToast("Chiusura bilancio completata! File archiviato su Drive ❄️");
+                        setTimeout(() => { location.reload(); }, 1500);
+                    } else { throw new Error(); }
+                } catch(e) { showToast("⚠️ Errore durante la scrittura a freddo dell'archivio"); }
+            }
         }
 
         function esportaFileBackup() { const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); }
