@@ -704,7 +704,7 @@
                     const tAnno = parseInt(parts[0]);
                     const tMese = parseInt(parts[1]);
                     
-                    let永久 con = false;
+                    let con = false;
                     if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
                     if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
                 }
