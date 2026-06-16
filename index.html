@@ -197,7 +197,7 @@
                         <div id="last-update-reg" class="mt-1 small" style="font-size: 0.7rem; color: var(--text-muted);">Dati aggiornati al: --/-- ore --:--</div>
                     </div>
                     
-                    <div class="d-flex justify-between mt-4">
+                    <div class="d-flex justify-content-between mt-4">
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">CARTA</small><span id="dash-carta-mese" class="fw-bold" style="color: #fbbf24; font-size: 1rem;">€ 0.00</span></div>
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">PERSONALE</small><span id="dash-fondo-personale" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">RISPARMI</small><span id="dash-fondo-risparmi" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
@@ -375,7 +375,6 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
-        // === SENSORE AUTOMATICO AMBIENTE REALE LAN ===
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -486,15 +485,27 @@
         }
 
         async function saveData() { 
-            sanitizeDatabase(); db.last_update = getTimestampString(); db.timestamp = Date.now(); 
+            sanitizeDatabase(); 
+            db.last_update = getTimestampString(); 
+            db.timestamp = Date.now(); 
+            
+            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
+            updateDashboard();
+            updateExitButton();
+            
             if (isServerMode) {
                 try {
                     await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(db) });
-                    dataChanged = false; updateDashboard();
-                } catch (e) { dataChanged = true; showToast("⚠️ Errore LAN: Impossibile salvare!"); }
+                    dataChanged = false; 
+                    updateExitButton();
+                } catch (e) { 
+                    dataChanged = true; 
+                    updateExitButton();
+                    showToast("⚠️ Errore LAN: Backup sul PC non riuscito!"); 
+                }
             } else {
-                localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
-                dataChanged = true; updateExitButton(); updateDashboard(); 
+                dataChanged = true; 
+                updateExitButton(); 
             }
         }
 
@@ -665,7 +676,6 @@
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
-        // === CORREZIONE MILITARE RIMOZIONE TRANSAZIONE (delT LINEARE E SENZA REFUSI COMPILATIVI) ===
         function delT(id) { 
             if (confirm('Eliminare operazione?')) { 
                 const t = db.transazioni.find(x => x.id === id);
@@ -733,7 +743,6 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
         
-        // === RIGIDAMENTE CORRETTA ED UNIFICATA LA GESTIONE FONDI (UNICA DICHIARAZIONE PULITA) ===
         function modificaFondi(tipoFondo, azione) { 
             const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); 
             const valore = parseFloat(input.value); 
