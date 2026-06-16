@@ -374,6 +374,9 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
+        // === SENSORE AUTOMATICO AMBIENTE REALE LAN ===
+        const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
         function getTimestampString() { const now = new Date(); const dd = String(now.getDate()).padStart(2, '0'); const mm = String(now.getMonth() + 1).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); return dd + "/" + mm + " ore " + hh + ":" + min; }
@@ -388,13 +391,10 @@
             toast.show(); 
         }
 
-        // === REGISTRAZIONE SERVICE WORKER CON AUTO-UPDATE FORZATO ===
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('sw.js')
-            .then(reg => { 
-                console.log('SW attivo'); 
-                reg.update(); 
-            }).catch(e => console.log('SW offline', e)); 
+            .then(reg => { console.log('SW attivo'); reg.update(); })
+            .catch(e => console.log('SW offline', e)); 
         }
 
         function sanitizeDatabase() {
@@ -422,15 +422,31 @@
 
         function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
 
-        function checkPassword() {
+        async function checkPassword() {
             const inputVal = document.getElementById('password-input').value;
             if (hashPIN(inputVal) === 49530741) { 
-                const localData = localStorage.getItem('gestionale_db_pixel');
-                if (localData) { try { db = JSON.parse(localData); } catch(e) { db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 }; } }
-                sanitizeDatabase(); 
-                
-                document.getElementById('login-screen').classList.add('hidden'); 
-                document.getElementById('sync-screen').classList.remove('hidden');
+                if (isServerMode) {
+                    try {
+                        const response = await fetch('/api/data');
+                        if (response.ok) {
+                            db = await response.json(); sanitizeDatabase();
+                            document.getElementById('login-screen').classList.add('hidden');
+                            document.getElementById('app-screen').classList.remove('hidden');
+                            document.getElementById('note-area').value = db.note;
+                            document.getElementById('trans-data').value = getLocalDateString();
+                            populateAnnoFiltri(); naviga('home'); showToast("Sincronizzato col server LAN ✅");
+                        } else throw new Error();
+                    } catch (e) {
+                        document.getElementById('login-error').innerHTML = "⚠️ Server spento! Avvia il file server.py.";
+                        document.getElementById('login-error').classList.remove('hidden');
+                    }
+                } else {
+                    const localData = localStorage.getItem('gestionale_db_pixel');
+                    if (localData) { try { db = JSON.parse(localData); } catch(e) { } }
+                    sanitizeDatabase(); 
+                    document.getElementById('login-screen').classList.add('hidden'); 
+                    document.getElementById('sync-screen').classList.remove('hidden');
+                }
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
 
@@ -456,46 +472,51 @@
                     if (cloudDb.transazioni && cloudDb.fondi) {
                         let localTimestamp = Number(db.timestamp) || 0;
                         let cloudTimestamp = Number(cloudDb.timestamp) || 0;
-                        
                         if (cloudTimestamp <= localTimestamp && localTimestamp !== 0) {
-                            event.target.value = '';
-                            enterApp('home');
-                            return;
+                            event.target.value = ''; enterApp('home'); return;
                         }
-                        
-                        db = cloudDb;
-                        sanitizeDatabase();
+                        db = cloudDb; sanitizeDatabase();
                         localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                        event.target.value = '';
-                        enterApp('home');
-                        showToast("✅ Dati Sincronizzati");
-                    } else { throw new Error("Struttura non conforme"); }
+                        event.target.value = ''; enterApp('home'); showToast("✅ Dati Sincronizzati");
+                    } else { throw new Error(); }
                 } catch(err) { event.target.value = ''; }
             };
             reader.readAsText(file);
         }
 
-        function saveData() { 
-            sanitizeDatabase(); 
-            db.last_update = getTimestampString(); 
-            db.timestamp = Date.now(); 
-            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
-            dataChanged = true; updateExitButton(); updateDashboard(); 
+        async function saveData() { 
+            sanitizeDatabase(); db.last_update = getTimestampString(); db.timestamp = Date.now(); 
+            if (isServerMode) {
+                try {
+                    await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(db) });
+                    dataChanged = false; updateDashboard();
+                } catch (e) { dataChanged = true; showToast("⚠️ Errore LAN: Impossibile salvare!"); }
+            } else {
+                localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
+                dataChanged = true; updateExitButton(); updateDashboard(); 
+            }
         }
 
         function updateExitButton() { 
             const btn = document.getElementById('btn-esci'); 
             if (btn) { 
-                if (dataChanged) { btn.innerHTML = '📥 Salva su Drive'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
+                if (!isServerMode && dataChanged) { btn.innerHTML = '📥 Salva su Drive'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
                 else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm"; } 
             } 
         }
 
-        function logout() { if (dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => { location.reload(); }, 1500); } else { location.reload(); } }
+        function logout() { 
+            if (isServerMode) { location.reload(); } 
+            else { if (dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => { location.reload(); }, 1500); } else { location.reload(); } }
+        }
 
         function saveNotes() { 
             const currentNote = document.getElementById('note-area').value; 
-            if (db.note !== currentNote) { db.note = currentNote; document.getElementById('note-status').innerText = "Salvate ✓"; saveData(); setTimeout(() => { document.getElementById('note-status').innerText = ""; }, 2000); } 
+            if (db.note !== currentNote) { 
+                db.note = currentNote; 
+                document.getElementById('note-status').innerText = "Salvataggio..."; 
+                saveData().then(() => { document.getElementById('note-status').innerText = "Salvate ✓"; setTimeout(() => { document.getElementById('note-status').innerText = ""; }, 2000); });
+            } 
         }
 
         function updateDashboard() {
@@ -671,7 +692,7 @@
                 let m = mC; let y = aC; if (r.mese === 'prossimo') { m++; if (m > 12) { m = 1; y++; } } 
                 let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
                 const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
-                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, category: r.categoria || 'Altro', importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
+                if (r.ultima_esecuzione !== meseCorrenteFirma) { db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false }); r.ultima_esecuzione = meseCorrenteFirma; ins++; } 
             }); 
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
