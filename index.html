@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- === BLOCCO INTEGRALE CACHE GRAFICA DISPOSITIVI === -->
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -144,7 +143,7 @@
                 
                 <div class="d-flex justify-content-center mb-4">
                     <svg viewBox="0 0 40 40" width="70" height="70" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-                      <path fill="#FFC107" d="M13.8 28.5L6.6 16l7.2-12.5h14.4L21 16z"/>
+                      <path fill="#FFC107" d="M13.8 28.5L6.6 16 l7.2-12.5h14.4L21 16z"/>
                       <path fill="#1976D2" d="M13.8 28.5h14.4L35.4 16H21z"/>
                       <path fill="#4CAF50" d="M28.2 28.5L35.4 16 28.2 3.5H13.8L21 16z"/>
                     </svg>
@@ -375,6 +374,7 @@
         let activeSection = 'home'; let activeViewMode = 'corrente';
         let dataChanged = false;
 
+        // === SENSORE AUTOMATICO AMBIENTE REALE LAN ===
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -525,12 +525,15 @@
 
             db.transazioni.forEach(t => {
                 if (!t.isFondoTransfer) {
-                    const dT = new Date(t.data);
+                    const parts = t.data.split('-');
+                    const tAnno = parseInt(parts[0]);
+                    const tMese = parseInt(parts[1]);
+                    
                     if (t.sezione === 'conto') {
                         if (t.tipo === 'entrata') saldo += t.importo; else saldo -= t.importo;
                         if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += t.importo; else saldoContabile -= t.importo; }
                     } else if (t.sezione === 'carta') {
-                        if (t.tipo === 'uscita' && (dT.getMonth()+1) === mC && dT.getFullYear() === aC) totaleCartaMese += t.importo;
+                        if (t.tipo === 'uscita' && tMese === mC && tAnno === aC) totaleCartaMese += t.importo;
                         if (!t.confermato) { if (t.tipo === 'uscita') saldo -= t.importo; else saldo += t.importo; }
                     }
                 }
@@ -616,9 +619,18 @@
             let dati = db.transazioni.filter(t => t.sezione === activeSection);
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio')?.value.toLowerCase().trim() || "";
-                dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() === sA && (d.getMonth()+1) === sM; });
+                
+                dati = dati.filter(t => { 
+                    const parts = t.data.split('-');
+                    return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; 
+                });
                 if (searchVal) { dati = dati.filter(t => t.causale.toLowerCase().includes(searchVal)); }
-            } else { dati = dati.filter(t => { const d = new Date(t.data); return d.getFullYear() > aC || (d.getFullYear() === aC && (d.getMonth()+1) >= mC); }); }
+            } else { 
+                dati = dati.filter(t => { 
+                    const parts = t.data.split('-');
+                    return parseInt(parts[0]) > aC || (parseInt(parts[0]) === aC && parseInt(parts[1]) >= mC); 
+                }); 
+            }
             
             let boxTotale = document.getElementById('totale-archivio-box');
             if (boxTotale) {
@@ -629,7 +641,8 @@
             }
 
             let htmlRighe = '';
-            dati.sort((a,b) => (new Date(b.data) - new Date(a.data)) || String(b.id).localeCompare(String(a.id))).forEach(t => {
+            // ORDINAMENTO OTTIMIZZATO SENZA PIÙ L'USO DEL COSTRUTTORE NEW DATE()
+            dati.sort((a,b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = ''; let st = '';
                 if (activeSection === 'carta') {
                     if (t.confermato) { st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>'; } 
@@ -651,8 +664,15 @@
 
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
-        function delT(id) { if (confirm('Eliminare operazione?')) { const t = db.transazioni.find(x => x.id === id); if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; } db.transazioni = db.trans物件r = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); } }
-        function delT(id) { if (confirm('Eliminare operazione?')) { const t = db.transazioni.find(x => x.id === id); if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; } db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); } }
+        
+        // === CORRETTO COMPLETA INTEGRIZZAZIONE RIGA ELIMINA TRANSAZIONE ===
+        function delT(id) { 
+            if (confirm('Eliminare operazione?')) { 
+                const t = db.transazioni.find(x => x.id === id);
+                if (t && t.isFondoTransfer) { const tipoFondo = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'); if (t.tipo === 'entrata') db.fondi[tipoFondo] += t.importo; if (t.tipo === 'uscita') db.fondi[tipoFondo] -= t.importo; }
+                db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode); showToast("Eliminata e Fondi ricalcolati"); 
+            } 
+        }
         function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { 
@@ -663,8 +683,12 @@
             
             db.transazioni.forEach(t => {
                 if (t.sezione === 'carta' && !t.confermato) {
-                    const d = new Date(t.data); let confermaQuesta = false;
-                    if (mode === 'archivio' && sA && sM) { if (d.getFullYear() === sA && (d.getMonth() + 1) === sM) { confermaQuesta = true; meseRiferimento = sM; annoRiferimento = sA; } }
+                    const parts = t.data.split('-');
+                    const tAnno = parseInt(parts[0]);
+                    const tMese = parseInt(parts[1]);
+                    
+                    let confermaQuesta = false;
+                    if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { confermaQuesta = true; meseRiferimento = sM; annoRiferimento = sA; } }
                     if (confermaQuesta) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
                 }
             });
@@ -694,7 +718,6 @@
                 let targetGiorno = r.giorno; let lastDayOfMonth = new Date(y, m, 0).getDate(); if (targetGiorno > lastDayOfMonth) targetGiorno = lastDayOfMonth; 
                 const dS = y + "-" + m.toString().padStart(2, '0') + "-" + targetGiorno.toString().padStart(2, '0'); 
                 if (r.ultima_esecuzione !== meseCorrenteFirma) { 
-                    // CORRETTO IL TYPO DA category A categoria
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: dS, causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false }); 
                     r.ultima_esecuzione = meseCorrenteFirma; ins++; 
                 } 
@@ -702,6 +725,7 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
         
+        function modificaFondi(tipoFondo, wiring ACTION) { const input = document.getElementById("fondo-" + tipoFondo + "-" + wiring ACTION); const valore = parseFloat(input.value); if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); if (wiring ACTION === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } input.value = ''; saveData(); showToast("Fondi aggiornati"); }
         function modificaFondi(tipoFondo, azione) { const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); const valore = parseFloat(input.value); if (isNaN(valore) || valore <= 0) { showToast("⚠️ Importo non valido"); return; } const oggi = getLocalDateString(); if (azione === 'aggiungi') { db.fondi[tipoFondo] += valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } else { if (valore > db.fondi[tipoFondo]) { showToast("⚠️ Fondi insufficienti!"); return; } db.fondi[tipoFondo] -= valore; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: valore, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo }); } input.value = ''; saveData(); showToast("Fondi aggiornati"); }
         function esportaFileBackup() { const now = new Date(); const yy = now.getFullYear(); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0'); const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0'); const timestamp = yy + mm + dd + "_" + hh + min + ss; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + timestamp + ".json"; document.body.appendChild(a); a.click(); a.remove(); showToast("Sincronizzazione Cloud inviata 🚀"); }
         function importaFileBackup() { const file = document.getElementById('file-import'); if (!file.files[0]) return showToast("⚠️ Seleziona un file!"); const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); dataChanged = true; updateExitButton(); updateDashboard(); showToast("Database Ripristinato!"); } catch(err) { showToast("⚠️ File JSON non valido"); } }; r.readAsText(file.files[0]); }
