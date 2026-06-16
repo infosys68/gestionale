@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- === BLOCCO INTEGRALE CACHE GRAFICA DISPOSITIVI === -->
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -196,7 +197,7 @@
                         <div id="last-update-reg" class="mt-1 small" style="font-size: 0.7rem; color: var(--text-muted);">Dati aggiornati al: --/-- ore --:--</div>
                     </div>
                     
-                    <div class="d-flex justify-content-between mt-4">
+                    <div class="d-flex justify-between mt-4">
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">CARTA</small><span id="dash-carta-mese" class="fw-bold" style="color: #fbbf24; font-size: 1rem;">€ 0.00</span></div>
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">PERSONALE</small><span id="dash-fondo-personale" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
                         <div class="box-metrica"><small class="d-block text-muted fw-bold mb-1" style="font-size:0.65rem;">RISPARMI</small><span id="dash-fondo-risparmi" class="fw-bold text-info" style="font-size: 1rem;">€ 0.00</span></div>
@@ -641,7 +642,6 @@
             }
 
             let htmlRighe = '';
-            // ORDINAMENTO VELOCE E SICURO IMMUNE DAI FUSI ORARI
             dati.sort((a,b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id))).forEach(t => {
                 const isFutura = t.data > localToday; let az = ''; let st = '';
                 if (activeSection === 'carta') {
@@ -665,7 +665,7 @@
         function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
         function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
-        // === CORREZIONE COMPLETA RIGIDA DELLA CANCELLAZIONE (delT SENZA DOPPIONI O BOZZE) ===
+        // === CORREZIONE MILITARE RIMOZIONE TRANSAZIONE (delT LINEARE E SENZA REFUSI COMPILATIVI) ===
         function delT(id) { 
             if (confirm('Eliminare operazione?')) { 
                 const t = db.transazioni.find(x => x.id === id);
@@ -733,7 +733,7 @@
             if (ins > 0) { saveData(); renderTable(activeViewMode); showToast(ins + " Ricorrenti inseriti!"); } else showToast("Già scalati per questo mese."); 
         }
         
-        // === RIGIDAMENTE CORRETTA LA GESTIONE DEI FONDI SENZA RIGHE SPURIE ===
+        // === RIGIDAMENTE CORRETTA ED UNIFICATA LA GESTIONE FONDI (UNICA DICHIARAZIONE PULITA) ===
         function modificaFondi(tipoFondo, azione) { 
             const input = document.getElementById("fondo-" + tipoFondo + "-" + azione); 
             const valore = parseFloat(input.value); 
