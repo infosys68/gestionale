@@ -409,6 +409,31 @@
 
         function apriModalTransazione() { document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = ''; document.getElementById('trans-data').value = getLocalDateString(); const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
 
+        // MOTORE DI RICALCOLO AUTOMATICO SE SI MODIFICA/ELIMINA IL PASSATO DELLA CARTA CHIUSA
+        function ricalcolaAddebitoCarta(anno, mese) {
+            let nuovoTotale = 0;
+            db.transazioni.forEach(x => {
+                if (x && x.sezione === 'carta' && x.confermato && x.data) {
+                    const parts = x.data.split('-');
+                    if (parts.length === 3 && parseInt(parts[0]) === anno && parseInt(parts[1]) === mese) {
+                        nuovoTotale += (x.tipo === 'uscita' ? x.importo : -x.importo);
+                    }
+                }
+            });
+            
+            const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+            const causaleDaCercare = "Saldo Carta mese di " + nomiMesi[mese];
+            
+            let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare);
+            if (rigaAddebito) {
+                if (nuovoTotale > 0) {
+                    rigaAddebito.importo = nuovoTotale;
+                } else {
+                    db.transazioni = db.transazioni.filter(x => x && x.id !== rigaAddebito.id);
+                }
+            }
+        }
+
         function addTransaction(e) {
             e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
             const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
@@ -422,6 +447,17 @@
             }
             const t = { id: id || generateSecureId(), sezione: vecchia ? vecchia.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, categoria: categoryInput, importo: importoInput, confermato: vecchia ? vecchia.confermato : false, isFondoTransfer: vecchia ? vecchia.isFondoTransfer : false, targetFondo: vecchia ? vecchia.targetFondo : null };
             if (id) { db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; } else { db.transazioni.push(t); }
+            
+            // Trigger ricalcolo dinamico se la transazione della carta era già archiviata/confermata
+            if (t.sezione === 'carta' && t.confermato) {
+                const parts = t.data.split('-');
+                if (parts.length === 3) ricalcolaAddebitoCarta(parseInt(parts[0]), parseInt(parts[1]));
+            }
+            if (vecchia && vecchia.sezione === 'carta' && vecchia.confermato) {
+                const partsVecchia = vecchia.data.split('-');
+                if (partsVecchia.length === 3) ricalcolaAddebitoCarta(parseInt(partsVecchia[0]), parseInt(partsVecchia[1]));
+            }
+
             saveData(); renderTable(activeViewMode); bootstrap.Modal.getInstance(document.getElementById('modalTransazione')).hide();
         }
 
@@ -499,7 +535,17 @@
                     const f = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                     if (t.tipo === 'entrata') db.fondi[f] += t.importo; if (t.tipo === 'uscita') db.fondi[f] -= t.importo;
                 }
-                db.transazioni = db.transazioni.filter(x => x.id !== id); saveData(); renderTable(activeViewMode);
+                
+                let ricalcolaMese = null; let ricalcolaAnno = null;
+                if (t && t.sezione === 'carta' && t.confermato && t.data) {
+                    const parts = t.data.split('-');
+                    if (parts.length === 3) { ricalcolaAnno = parseInt(parts[0]); ricalcolaMese = parseInt(parts[1]); }
+                }
+                
+                db.transazioni = db.transazioni.filter(x => x.id !== id); 
+                if (ricalcolaMese !== null && ricalcolaAnno !== null) ricalcolaAddebitoCarta(ricalcolaAnno, ricalcolaMese);
+                
+                saveData(); renderTable(activeViewMode);
             }
         }
 
@@ -518,7 +564,7 @@
         function addRicorrente(e) { 
             e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
             const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
-            const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
+            const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, category: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
             if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } 
             else { db.ricorrenti.push(r); }
             saveData(); renderRenovations(); bootstrap.Modal.getInstance(document.getElementById('modalRicorrente')).hide(); 
