@@ -77,7 +77,7 @@
             </div>
             <div class="card p-4 border-0 mb-4" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
                 <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
-                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verify data.json</button>
+                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verifica data.json</button>
                 <button onclick="enterApp('home')" class="btn w-100 rounded-pill fw-bold py-2 mb-2" style="border: 1px solid #4ade80; color: #4ade80; background: transparent;">⤬ Salta e usa locali</button>
             </div>
             <a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold">Gestione Manuale (Avanzato)</a>
@@ -198,7 +198,10 @@
                     <button onclick="esportaFileBackup()" class="btn btn-primary text-dark w-100 rounded-pill mb-4 fw-bold">Scarica Backup</button>
                     <hr style="border-color: var(--border-color);">
                     <input type="file" id="file-import" class="form-control mb-3" accept=".json">
-                    <button onclick="importaFileBackup()" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Carica e Ripristina</button>
+                    <div class="d-flex gap-2">
+                        <button onclick="ispezionaFileBackup()" class="btn btn-outline-warning w-50 rounded-pill fw-bold">🔍 Solo Ispezione</button>
+                        <button onclick="importaFileBackup()" class="btn btn-danger w-50 rounded-pill fw-bold">💥 Sovrascrivi</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -213,6 +216,7 @@
     <script>
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
         let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false; let isSubmitting = false; let noteTimeout;
+        let isInspectionMode = false;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -238,32 +242,31 @@
 
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(reg => { reg.update(); }).catch(e => console.error(e)); }
 
-        // OTTIMIZZAZIONE COMPILAZIONE: Esegue la pulizia numerica ad anello una sola volta all'avvio
         function sanitizeDatabase() {
             try {
                 if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
                 if (!Array.isArray(db.transazioni)) db.transazioni = [];
                 if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
+                
+                db.transazioni = db.transazioni.filter(t => t !== null && typeof t === 'object');
+                db.ricorrenti = db.ricorrenti.filter(r => r !== null && typeof r === 'object');
+                
                 if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
                 
                 db.fondi.personale = cleanNumeric(db.fondi.personale); 
                 db.fondi.risparmi = cleanNumeric(db.fondi.risparmi);
                 
                 db.transazioni.forEach(t => { 
-                    if (t) {
-                        if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
-                        if (!t.sezione) t.sezione = 'conto'; 
-                        if (!t.categoria) t.categoria = 'Altro';
-                        t.importo = cleanNumeric(t.importo);
-                        if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
-                    }
+                    if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
+                    if (!t.sezione) t.sezione = 'conto'; 
+                    if (!t.categoria) t.categoria = 'Altro';
+                    t.importo = cleanNumeric(t.importo);
+                    if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
                 });
                 db.ricorrenti.forEach(r => {
-                    if (r) {
-                        if (!r.id || r.id.length < 15) r.id = generateSecureId();
-                        if (!r.categoria) r.categoria = 'Altro';
-                        r.importo = cleanNumeric(r.importo);
-                    }
+                    if (!r.id || r.id.length < 15) r.id = generateSecureId();
+                    if (!r.categoria) r.categoria = r.category || 'Altro';
+                    r.importo = cleanNumeric(r.importo);
                 });
             } catch (e) { console.error("Errore sanitizzazione strutturale:", e); }
         }
@@ -314,6 +317,10 @@
         }
 
         async function saveData() { 
+            if (isInspectionMode) {
+                alert("⚠️ Azione bloccata! Sei in 'Modalità Ispezione'. Riavvia la pagina per tornare ai dati reali.");
+                return;
+            }
             db.timestamp = Date.now(); 
             sanitizeDatabase(); db.last_update = getTimestampString(); 
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); updateDashboard(); updateExitButton();
@@ -325,14 +332,15 @@
 
         function updateExitButton() { 
             const btn = document.getElementById('btn-esci'); if (!btn) return;
+            if (isInspectionMode) { btn.innerHTML = '🔄 Esci Ispezione'; btn.className = "btn btn-info btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; return; }
             if (!isServerMode && dataChanged) { btn.innerHTML = '📥 Salva Cloud'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
             else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm"; } 
         }
 
-        function logout() { if (!isServerMode && dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => location.reload(), 1500); } else { location.reload(); } }
+        function logout() { if (isInspectionMode) { location.reload(); return; } if (!isServerMode && dataChanged) { esportaFileBackup(); dataChanged = false; setTimeout(() => location.reload(), 1500); } else { location.reload(); } }
         
-        // DEBOUNCE DI SICUREZZA 1.5s PER SCRITTURA APPUNTI VELOCI
         function handleNoteInput() {
+            if (isInspectionMode) return;
             const status = document.getElementById('note-status');
             if (status) status.innerText = "✍️ Scrittura...";
             clearTimeout(noteTimeout);
@@ -355,7 +363,7 @@
                         if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += imp; else saldoContabile -= imp; }
                     } else if (t.sezione === 'carta') {
                         if (t.tipo === 'uscita' && parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) totaleCartaMese += imp;
-                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= imp; else saldo += imp; }
+                        if (!t.confermato) { if (t.tipo === 'uscita' && saldo) saldo -= imp; else saldo += imp; }
                     }
                 }
             });
@@ -368,21 +376,24 @@
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
             document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati aggiornati al: --/-- ore --:--";
             
-            // CONDIZIONALI MILITARI DI INIEZIONE BANNER ALLERTE E PROMEMORIA
             const alertContainer = document.getElementById('alert-container');
             if (alertContainer) {
                 alertContainer.innerHTML = '';
+                
+                // INIEZIONE BANNER FISSO DI ISPEZIONE DI SICUREZZA
+                if (isInspectionMode) {
+                    alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(245,158,11,0.2); color:var(--accent-orange); border-color:var(--accent-orange); font-size:0.9rem;">🔍 MODALITÀ ISPEZIONE ATTIVA<br><span style="font-size:0.75rem; font-weight:normal;">Stai guardando un file di backup. Nessuna modifica verrà salvata. Riavvia la pagina per uscire.</span></div>`;
+                }
+                
                 if (saldo < 0) { alertContainer.innerHTML += `<div class="alert-negativo d-block mb-2">⚠️ ATTENZIONE: CONTO IN NEGATIVO</div>`; }
                 
-                // AVVISO BILANCIO RIGIDAMENTE CIRCOSCRITTO AL PC (MARZO = INDEX 2)
                 if (isServerMode && oggi.getMonth() === 2) {
                     alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(56,189,248,0.1); color:var(--accent-blue); border-color:var(--accent-blue);">❄️ PROMEMORIA PC: Esegui l'archiviazione a freddo dell'anno precedente.</div>`;
                 }
                 
-                // AVVISO RICORRENTI ABILITATO ESCLUSIVAMENTE DAL GIORNO 27 IN POI
                 if (oggi.getDate() >= 27) {
                     const meseCorrenteFirma = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}`;
-                    let mancano = db.ricorrenti.some(r => r.ultima_esecuzione !== meseCorrenteFirma);
+                    let mancano = db.ricorrenti.some(r => r && r.ultima_esecuzione !== meseCorrenteFirma);
                     if (mancano) { alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2">🔁 PROMEMORIA RICORRENTI: Ci sono scadenze mensili da inserire.</div>`; }
                 }
             }
@@ -391,7 +402,7 @@
 
         function checkRicorrentiStatus() {
             const o = new Date(); const meseCorrenteFirma = `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
-            let mancano = db.ricorrenti.some(r => r.ultima_esecuzione !== meseCorrenteFirma);
+            let mancano = db.ricorrenti.some(r => r && r.ultima_esecuzione !== meseCorrenteFirma);
             if (document.getElementById('btn-inserisci-ricorrenti')) document.getElementById('btn-inserisci-ricorrenti').style.display = mancano ? 'inline-block' : 'none';
         }
 
@@ -400,16 +411,15 @@
             document.getElementById('fab-add').classList.add('hidden'); activeSection = sezione; document.getElementById('fab-add').innerHTML = (sezione === 'carta') ? '💳' : '+';
             if (sezione === 'home') { document.getElementById('dashboard-view').classList.remove('hidden'); updateDashboard(); }
             else {
-                if (sezione === 'conto' || sezione === 'carta') { document.getElementById('transazioni-section').classList.remove('hidden'); document.getElementById('transazioni-title').innerText = (sezione === 'conto') ? '🏦 Conto' : '💳 Carta'; document.getElementById('fab-add').classList.remove('hidden'); renderTable('corrente'); }
+                if (sezione === 'conto' || sezione === 'carta') { document.getElementById('transazioni-section').classList.remove('hidden'); document.getElementById('transazioni-title').innerText = (sezione === 'conto') ? '🏦 Conto' : '💳 Carta'; if(!isInspectionMode) document.getElementById('fab-add').classList.remove('hidden'); renderTable('corrente'); }
                 else if (sezione === 'ricorrenti') { document.getElementById('ricorrenti-section').classList.remove('hidden'); renderRenovations(); } 
                 else if (sezione === 'fondi') { document.getElementById('fondi-section').classList.remove('hidden'); updateDashboard(); } 
                 else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); if (isServerMode) { document.getElementById('pc-history-block').classList.remove('hidden'); caricaStoricoBackups(); } }
             }
         }
 
-        function apriModalTransazione() { document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = ''; document.getElementById('trans-data').value = getLocalDateString(); const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        function apriModalTransazione() { if(isInspectionMode) return; document.getElementById('form-transazione').reset(); document.getElementById('trans-id').value = ''; document.getElementById('trans-data').value = getLocalDateString(); const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
 
-        // MOTORE DI RICALCOLO AUTOMATICO SE SI MODIFICA/ELIMINA IL PASSATO DELLA CARTA CHIUSA
         function ricalcolaAddebitoCarta(anno, mese) {
             let nuovoTotale = 0;
             db.transazioni.forEach(x => {
@@ -435,7 +445,7 @@
         }
 
         function addTransaction(e) {
-            e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
+            e.preventDefault(); if (isInspectionMode) return; if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
             const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
             if (isNaN(importoInput) || importoInput <= 0) return;
             
@@ -448,7 +458,6 @@
             const t = { id: id || generateSecureId(), sezione: vecchia ? vecchia.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, categoria: categoryInput, importo: importoInput, confermato: vecchia ? vecchia.confermato : false, isFondoTransfer: vecchia ? vecchia.isFondoTransfer : false, targetFondo: vecchia ? vecchia.targetFondo : null };
             if (id) { db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; } else { db.transazioni.push(t); }
             
-            // Trigger ricalcolo dinamico se la transazione della carta era già archiviata/confermata
             if (t.sezione === 'carta' && t.confermato) {
                 const parts = t.data.split('-');
                 if (parts.length === 3) ricalcolaAddebitoCarta(parseInt(parts[0]), parseInt(parts[1]));
@@ -461,7 +470,6 @@
             saveData(); renderTable(activeViewMode); bootstrap.Modal.getInstance(document.getElementById('modalTransazione')).hide();
         }
 
-        // AGGIORNAMENTO MILITARE: Interroga asincronamente i file di archivio del server senza ingolfare il Pixel
         async function renderTable(mode) {
             activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = ''; const oggi = new Date(); const localToday = getLocalDateString();
             document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
@@ -469,15 +477,14 @@
             const btnTutti = document.getElementById('btn-conferma-tutti');
             if (btnTutti) {
                 let datiNonConfermati = db.transazioni.filter(t => t && t.sezione === 'carta' && !t.confermato);
-                if (activeSection === 'carta' && mode === 'archivio' && datiNonConfermati.length > 0) { btnTutti.classList.remove('hidden'); } else { btnTutti.classList.add('hidden'); }
+                if (activeSection === 'carta' && mode === 'archivio' && datiNonConfermati.length > 0 && !isInspectionMode) { btnTutti.classList.remove('hidden'); } else { btnTutti.classList.add('hidden'); }
             }
 
             let dati = db.transazioni.filter(t => { return t && t.sezione === activeSection; });
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
                 
-                // ROUTINE DI INTERROGAZIONE ASINCRONA DEGLI ANNI PASSATI
-                if (isServerMode && sA < oggi.getFullYear()) {
+                if (isServerMode && sA < oggi.getFullYear() && !isInspectionMode) {
                     try {
                         const res = await fetch(`/api/archive_view?year=${sA}`);
                         if (res.ok) {
@@ -511,24 +518,33 @@
                     if (t.confermato) { st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>'; } 
                     else { 
                         st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>'; 
-                        let btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
-                        az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; 
+                        if (!isInspectionMode) {
+                            let btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
+                            az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; 
+                        }
                     }
                 }
+                
+                let tastiAzione = '';
+                if (!isInspectionMode) {
+                    tastiAzione = `<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
+                }
+                
                 htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
                     <td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td>
-                    <td class="text-end" style="width:80px;">${az}<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td>
+                    <td class="text-end" style="width:80px;">${az}${tastiAzione}</td>
                 </tr>`;
             });
             tbody.innerHTML = htmlRighe;
         }
 
-        function conf(id) { db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
-        function post(id) { const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
+        function conf(id) { if(isInspectionMode) return; db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
+        function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
         function delT(id) {
+            if(isInspectionMode) return;
             if (confirm('Eliminare operazione?')) {
                 const t = db.transazioni.find(x => x.id === id);
                 if (t && t.isFondoTransfer) {
@@ -553,16 +569,17 @@
             const tbody = document.getElementById('ricorrenti-tbody'); tbody.innerHTML = ''; 
             [...db.ricorrenti].reverse().forEach(r => { 
                 if (r) {
-                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end"><button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button></td></tr>`; 
+                    let tasti = isInspectionMode ? '' : `<button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
+                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end">${tasti}</td></tr>`; 
                 }
             }); 
         }
-        function delR(id) { if (confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
-        function apriModalRicorrente() { document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
-        function editRicorrente(id) { const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function delR(id) { if(isInspectionMode) return; if (confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
+        function apriModalRicorrente() { if(isInspectionMode) return; document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function editRicorrente(id) { if(isInspectionMode) return; const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         
         function addRicorrente(e) { 
-            e.preventDefault(); if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
+            e.preventDefault(); if(isInspectionMode) return; if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
             const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
             const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
             if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } 
@@ -571,9 +588,10 @@
         }
         
         function inserisciTuttiRicorrenti() {
+            if(isInspectionMode) return;
             const o = new Date(); let ins = 0; const meseCorrenteFirma = `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
             db.ricorrenti.forEach(r => {
-                if (r.ultima_esecuzione !== meseCorrenteFirma) {
+                if (r && r.ultima_esecuzione !== meseCorrenteFirma) {
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: r.tipo, data: o.getFullYear() + "-" + String(o.getMonth() + 1).padStart(2, '0') + "-" + String(r.giorno).padStart(2, '0'), causale: r.causale, categoria: r.categoria || 'Altro', importo: r.importo, confermato: false });
                     r.ultima_esecuzione = meseCorrenteFirma; ins++;
                 }
@@ -582,22 +600,58 @@
         }
 
         function modificaFondi(tipoFondo, action) {
+            if(isInspectionMode) return;
             const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
             if (action === 'aggiungi') {
                 db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (val > db.fondi[tipoFondo]) return showToast("Fondi insufficienti!");
-                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, conference: true, isFondoTransfer: true, targetFondo: tipoFondo });
             }
             input.value = ''; saveData();
         }
 
         async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
-        async function ripristinaDaServer() { const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
-        async function archiviaAFreddo() { const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
+        async function ripristinaDaServer() { if(isInspectionMode) return; const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
+        async function archiviaAFreddo() { if(isInspectionMode) return; const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
         function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
-        function importaFileBackup() { const file = document.getElementById('file-import').files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { try { db = JSON.parse(e.target.result); sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); } catch(err) { alert("File non valido"); } }; r.readAsText(file); }
+        
+        // MODALITÀ APERTA IN SOLA LETTURA VOLATILE PER ISPEZIONE SENZA DANNI
+        function ispezionaFileBackup() {
+            const file = document.getElementById('file-import').files[0]; if (!file) return; 
+            const r = new FileReader(); 
+            r.onload = e => { 
+                try { 
+                    db = JSON.parse(e.target.result); 
+                    sanitizeDatabase(); 
+                    isInspectionMode = true; 
+                    document.getElementById('fab-add').classList.add('hidden');
+                    updateDashboard(); 
+                    naviga('home'); 
+                    showToast("🔍 Ispezione attiva! I dati reali sono al sicuro.");
+                } catch(err) { alert("File di backup non valido."); } 
+            }; 
+            r.readAsText(file); 
+        }
+
+        function importaFileBackup() { 
+            const file = document.getElementById('file-import').files[0]; if (!file) return; 
+            if (!confirm("⚠️ Attenzione! Questa operazione sovrascriverà definitivamente il database attuale. Vuoi procedere?")) return;
+            const r = new FileReader(); 
+            r.onload = e => { 
+                try { 
+                    db = JSON.parse(e.target.result); 
+                    sanitizeDatabase(); 
+                    isInspectionMode = false;
+                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
+                    saveData(); 
+                    alert("📥 Database ripristinato con successo! L'applicazione sarà riavviata.");
+                    location.reload();
+                } catch(err) { alert("File non valido o corrotto"); } 
+            }; 
+            r.readAsText(file); 
+        }
         
         function populateAnnoFiltri() { 
             const s = document.getElementById('filter-anno'); 
@@ -610,9 +664,10 @@
             if (sM) sM.value = pM.toString().padStart(2, '0'); 
         }
         
-        function editTransaction(id) { const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        function editTransaction(id) { if(isInspectionMode) return; const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { 
+            if(isInspectionMode) return;
             if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
             let modificate = false; let totaleDaAddebitare = 0; let meseRiferimento = null; let annoRiferimento = null;
             const mode = activeViewMode; const sA_el = document.getElementById('filter-anno'); const sM_el = document.getElementById('filter-mese');
