@@ -11,7 +11,6 @@
     <title>Gestionale</title>
     <link rel="manifest" href="manifest.json">
     
-    <!-- === COORDINA ICONA BANCA DATA-URI STILIZZATA PER PREFERITI E ICONA APP SMARTPHONE === -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     
@@ -58,7 +57,6 @@
 </head>
 <body>
 
-    <!-- SCHERMATA LOGIN CON LOGO BANCA SVG INLINE IMMUNE AL MANCATO SEGNALE -->
     <div id="login-screen">
         <div class="login-box">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 80px; height: 80px;" class="mb-4 text-info"><rect x="2" y="20" width="20" height="2" rx="0.5"/><path d="M12 2L2 7v3h20V7L12 2zM4 10v10M9 10v10M15 10v10M20 10v10"/></svg>
@@ -208,7 +206,6 @@
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
     </div>
 
-    <!-- WINDOW MODALS COSTRUTTORI CON STRUTTURA DECIMALE FORZATA -->
     <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
     <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" inputmode="numeric" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
     <datalist id="causali-rapide"><option value="Assicurazione"></option><option value="Benzina"></option><option value="Bolletta gas"></option><option value="Bolletta luce"></option><option value="Bollo"></option><option value="Bonifico da"></option><option value="Bonifico in favore di"></option><option value="Giroconto"></option><option value="GPL"></option><option value="Prelievo banca"></option><option value="Supermercato"></option><option value="Tari"></option><option value="Versamento assegno"></option><option value="Versamento contanti"></option></datalist>
@@ -257,16 +254,31 @@
                 db.fondi.risparmi = cleanNumeric(db.fondi.risparmi);
                 
                 db.transazioni.forEach(t => { 
-                    if (!t.id || t.id.length < 15) t.id = generateSecureId(); 
-                    if (!t.sezione) t.sezione = 'conto'; 
-                    if (!t.categoria) t.categoria = 'Altro';
+                    if (!t.id || typeof t.id !== 'string' || t.id.length < 15) t.id = generateSecureId(); 
+                    if (!t.sezione || typeof t.sezione !== 'string') t.sezione = 'conto'; 
+                    if (!t.tipo || typeof t.tipo !== 'string') t.tipo = 'uscita';
+                    if (!t.data || typeof t.data !== 'string' || !t.data.includes('-')) t.data = getLocalDateString();
+                    if (!t.causale || typeof t.causale !== 'string') t.causale = String(t.causale || 'Operazione senza causale');
+                    if (!t.categoria) t.categoria = t.category || 'Altro';
+                    if (typeof t.categoria !== 'string') t.categoria = 'Altro';
                     t.importo = cleanNumeric(t.importo);
-                    if (t.isFondoTransfer && !t.targetFondo) { t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; }
+                    t.confermato = !!t.confermato;
+                    t.isFondoTransfer = !!t.isFondoTransfer;
+                    if (t.isFondoTransfer && (!t.targetFondo || typeof t.targetFondo !== 'string')) { 
+                        t.targetFondo = t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi'; 
+                    }
                 });
                 db.ricorrenti.forEach(r => {
-                    if (!r.id || r.id.length < 15) r.id = generateSecureId();
+                    if (!r.id || typeof r.id !== 'string' || r.id.length < 15) r.id = generateSecureId();
+                    if (!r.tipo || typeof r.tipo !== 'string') r.tipo = 'uscita';
+                    if (!r.mese || typeof r.mese !== 'string') r.mese = 'attuale';
+                    r.giorno = parseInt(r.giorno) || 1;
+                    if (r.giorno < 1 || r.giorno > 31) r.giorno = 1;
+                    if (!r.causale || typeof r.causale !== 'string') r.causale = String(r.causale || 'Ricorrente senza causale');
                     if (!r.categoria) r.categoria = r.category || 'Altro';
+                    if (typeof r.categoria !== 'string') r.categoria = 'Altro';
                     r.importo = cleanNumeric(r.importo);
+                    if (!r.ultima_esecuzione || typeof r.ultima_esecuzione !== 'string') r.ultima_esecuzione = "";
                 });
             } catch (e) { console.error("Errore sanitizzazione strutturale:", e); }
         }
@@ -380,7 +392,6 @@
             if (alertContainer) {
                 alertContainer.innerHTML = '';
                 
-                // INIEZIONE BANNER FISSO DI ISPEZIONE DI SICUREZZA
                 if (isInspectionMode) {
                     alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(245,158,11,0.2); color:var(--accent-orange); border-color:var(--accent-orange); font-size:0.9rem;">🔍 MODALITÀ ISPEZIONE ATTIVA<br><span style="font-size:0.75rem; font-weight:normal;">Stai guardando un file di backup. Nessuna modifica verrà salvata. Riavvia la pagina per uscire.</span></div>`;
                 }
@@ -576,7 +587,7 @@
         }
         function delR(id) { if(isInspectionMode) return; if (confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
         function apriModalRicorrente() { if(isInspectionMode) return; document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
-        function editRicorrente(id) { if(isInspectionMode) return; const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
+        function editRicorrente(id) { if(isInspectionMode) return; const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')).show(); }
         
         function addRicorrente(e) { 
             e.preventDefault(); if(isInspectionMode) return; if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
@@ -607,7 +618,7 @@
                 db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (val > db.fondi[tipoFondo]) return showToast("Fondi insufficienti!");
-                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, conference: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             }
             input.value = ''; saveData();
         }
@@ -617,7 +628,6 @@
         async function archiviaAFreddo() { if(isInspectionMode) return; const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
         function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
         
-        // MODALITÀ APERTA IN SOLA LETTURA VOLATILE PER ISPEZIONE SENZA DANNI
         function ispezionaFileBackup() {
             const file = document.getElementById('file-import').files[0]; if (!file) return; 
             const r = new FileReader(); 
@@ -637,7 +647,7 @@
 
         function importaFileBackup() { 
             const file = document.getElementById('file-import').files[0]; if (!file) return; 
-            if (!confirm("⚠️ Attenzione! Questa operazione sovrascriverà definitivamente il database attuale. Vuoi procedere?")) return;
+            if (!confirm("⚠️ Attenzione! Questa operazione sovrascriverà definitivament il database attuale. Vuoi procedere?")) return;
             const r = new FileReader(); 
             r.onload = e => { 
                 try { 
