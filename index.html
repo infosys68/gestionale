@@ -11,6 +11,7 @@
     <title>Gestionale</title>
     <link rel="manifest" href="manifest.json">
     
+    <!-- === COORDINA ICONA BANCA DATA-URI STILIZZATA PER PREFERITI E ICONA APP SMARTPHONE === -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     
@@ -57,6 +58,7 @@
 </head>
 <body>
 
+    <!-- SCHERMATA LOGIN CON LOGO BANCA SVG INLINE IMMUNE AL MANCATO SEGNALE -->
     <div id="login-screen">
         <div class="login-box">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 80px; height: 80px;" class="mb-4 text-info"><rect x="2" y="20" width="20" height="2" rx="0.5"/><path d="M12 2L2 7v3h20V7L12 2zM4 10v10M9 10v10M15 10v10M20 10v10"/></svg>
@@ -75,7 +77,7 @@
             </div>
             <div class="card p-4 border-0 mb-4" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
                 <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
-                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verifica data.json</button>
+                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verify data.json</button>
                 <button onclick="enterApp('home')" class="btn w-100 rounded-pill fw-bold py-2 mb-2" style="border: 1px solid #4ade80; color: #4ade80; background: transparent;">⤬ Salta e usa locali</button>
             </div>
             <a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold">Gestione Manuale (Avanzato)</a>
@@ -203,6 +205,7 @@
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
     </div>
 
+    <!-- WINDOW MODALS COSTRUTTORI CON STRUTTURA DECIMALE FORZATA -->
     <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
     <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" inputmode="numeric" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
     <datalist id="causali-rapide"><option value="Assicurazione"></option><option value="Benzina"></option><option value="Bolletta gas"></option><option value="Bolletta luce"></option><option value="Bollo"></option><option value="Bonifico da"></option><option value="Bonifico in favore di"></option><option value="Giroconto"></option><option value="GPL"></option><option value="Prelievo banca"></option><option value="Supermercato"></option><option value="Tari"></option><option value="Versamento assegno"></option><option value="Versamento contanti"></option></datalist>
@@ -473,7 +476,7 @@
             if (mode === 'archivio') {
                 const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
                 
-                // ROUTINE DI INTERROGAZIONE ASINCRONA DEGLI ANNY PASSATI
+                // ROUTINE DI INTERROGAZIONE ASINCRONA DEGLI ANNI PASSATI
                 if (isServerMode && sA < oggi.getFullYear()) {
                     try {
                         const res = await fetch(`/api/archive_view?year=${sA}`);
@@ -582,7 +585,7 @@
             const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
             if (action === 'aggiungi') {
-                db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), interracial: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (val > db.fondi[tipoFondo]) return showToast("Fondi insufficienti!");
                 db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
