@@ -457,9 +457,15 @@
                     }
                 }
             });
+
             const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
             const causaleDaCercare = "Saldo Carta mese di " + nomiMesi[mese];
-            let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare);
+            
+            let meseAddebito = mese + 1; let annoAddebito = anno;
+            if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
+            let dataAddebitoTarget = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
+
+            let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare && x.data === dataAddebitoTarget);
             if (rigaAddebito) {
                 if (nuovoTotale > 0) {
                     rigaAddebito.importo = nuovoTotale;
@@ -796,7 +802,7 @@
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
                 }
                 saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
-            } else { showToast("Nessuna operazione da confermare qui."); }
+            } else { showToast("Nessuna operazione da confermare hier."); }
         }
 
         function exportToPDF(type) { 
