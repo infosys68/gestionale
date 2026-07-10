@@ -710,7 +710,9 @@
                         if (t.sezione === 'conto') {
                             if (t.tipo === 'entrata') impattoSaldoStorico += imp; else impattoSaldoStorico -= imp;
                         } else if (t.sezione === 'carta') {
-                            if (t.tipo === 'uscita' && t.confermato) impattoSaldoStorico -= imp; else if (t.tipo === 'entrata' && t.confermato) impattoSaldoStorico += imp;
+                            if (!t.confermato) {
+                                if (t.tipo === 'uscita') impattoSaldoStorico -= imp; else if (t.tipo === 'entrata') impattoSaldoStorico += imp;
+                            }
                         }
                     }
                 });
