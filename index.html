@@ -64,20 +64,7 @@
         </div>
     </div>
 
-    <div id="sync-screen" class="hidden">
-        <div class="login-box" style="padding: 25px 20px; border-radius: 28px; background-color: #1e293b; max-width: 360px;">
-            <div class="d-flex justify-content-center align-items-center mb-4">
-                <h3 class="fw-bold text-white m-0">Sincronizzazione</h3>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px; margin-left: 8px;" class="text-info"><rect x="2" y="20" width="20" height="2" rx="0.5"/><path d="M12 2L2 7v3h20V7L12 2zM4 10v10M9 10v10M15 10v10M20 10v10"/></svg>
-            </div>
-            <div class="card p-4 border-0 mb-4" style="background: rgba(255,255,255,0.04); border-radius: 20px;">
-                <input type="file" id="fast-sync-file" class="hidden" accept=".json" onchange="checkDriveFile(event)">
-                <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verifica data.json</button>
-                <button onclick="enterApp('home')" class="btn w-100 rounded-pill fw-bold py-2 mb-2" style="border: 1px solid #4ade80; color: #4ade80; background: transparent;">⤬ Salta e usa locali</button>
-            </div>
-            <div class="text-center"><a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold">Gestione Manuale (Avanzato)</a></div>
-        </div>
-    </div>
+    <div id="sync-screen" class="hidden"></div>
 
     <div id="app-screen" class="hidden">
         <div class="top-header">
@@ -220,6 +207,10 @@
         let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false; let isSubmitting = false; let noteTimeout;
         let isInspectionMode = false;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        // INDIRIZZI E CHIAVI DI ACCESSO HTTPS POST CIFRATI
+        const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxQ-Uilb-9aIWSGANrMkC-nn6mL-lYmKgBXwXSSaeyqdCLRz0PvNXeJjcFATkrdlcCx/exec";
+        const CLOUD_TOKEN = "Teo!!!2017";
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
@@ -305,8 +296,35 @@
                         }
                     } catch (e) { document.getElementById('login-error').innerHTML = "⚠️ Server offline."; document.getElementById('login-error').classList.remove('hidden'); }
                 } else {
-                    const localData = localStorage.getItem('gestionale_db_pixel'); if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
-                    sanitizeDatabase(); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('sync-screen').classList.remove('hidden');
+                    const localData = localStorage.getItem('gestionale_db_pixel'); 
+                    if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
+                    sanitizeDatabase();
+                    
+                    document.getElementById('login-screen').classList.add('hidden');
+                    showToast("↻ Allineamento protetto cloud...");
+                    
+                    try {
+                        const res = await fetch(CLOUD_API_URL, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'text/plain' },
+                          body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+                        });
+                        if (res.ok) {
+                            const cloudDb = await res.json();
+                            if (cloudDb && cloudDb.transazioni) {
+                                if ((Number(cloudDb.timestamp) || 0) > (Number(db.timestamp) || 0)) {
+                                    db = cloudDb; sanitizeDatabase();
+                                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                                    showToast("✔️ Allineato con l'ultimo file di Drive!");
+                                } else {
+                                    showToast("✔️ Dati locali già aggiornati.");
+                                }
+                            }
+                        }
+                    } catch(e) {
+                        showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
+                    }
+                    enterApp('home');
                 }
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
@@ -317,21 +335,6 @@
             populateAnnoFiltri(); naviga(startSection); updateExitButton(); 
         }
 
-        function checkDriveFile(event) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                try {
-                    const cloudDb = JSON.parse(e.target.result);
-                    if (cloudDb.transazioni && cloudDb.fondi) {
-                        if ((Number(cloudDb.timestamp) || 0) > (Number(db.timestamp) || 0)) { db = cloudDb; sanitizeDatabase(); localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); }
-                        enterApp('home');
-                    } else throw new Error();
-                } catch(err) { event.target.value = ''; }
-            };
-            reader.readAsText(file);
-        }
-
         async function saveData() { 
             if (isInspectionMode) {
                 alert("⚠️ Azione bloccata! Sei in 'Modalità Ispezione'. Riavvia la pagina per tornare ai dati reali.");
@@ -340,16 +343,31 @@
             db.timestamp = Date.now(); 
             sanitizeDatabase(); db.last_update = getTimestampString(); 
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); updateDashboard(); updateExitButton();
+            
             if (isServerMode) {
                 try { await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(db) }); dataChanged = false; updateExitButton(); } 
                 catch (e) { dataChanged = true; updateExitButton(); showToast("⚠️ Errore salvataggio server PC!"); }
-            } else { dataChanged = true; updateExitButton(); }
+            } else {
+                dataChanged = true; updateExitButton();
+                fetch(CLOUD_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "write", data: db })
+                }).then(res => res.json()).then(resData => {
+                    if (resData && resData.status === "ok") {
+                        dataChanged = false; updateExitButton();
+                        showToast("☁️ Sincronizzato su Google Drive!");
+                    }
+                }).catch(() => {
+                    showToast("⚠️ Salvato localmente. In attesa di connessione.");
+                });
+            }
         }
 
         function updateExitButton() { 
             const btn = document.getElementById('btn-esci'); if (!btn) return;
             if (isInspectionMode) { btn.innerHTML = '🔄 Esci Ispezione'; btn.className = "btn btn-info btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; return; }
-            if (!isServerMode && dataChanged) { btn.innerHTML = '📥 Salva Cloud'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
+            if (!isServerMode && dataChanged) { btn.innerHTML = '📥 In coda Cloud'; btn.className = "btn btn-warning btn-sm rounded-pill px-2 fw-bold text-dark shadow-sm"; } 
             else { btn.innerHTML = '🚪 Esci'; btn.className = "btn btn-outline-danger btn-sm rounded-pill px-2 fw-bold shadow-sm"; } 
         }
 
@@ -402,7 +420,7 @@
                 if (isServerMode && oggi.getMonth() === 2) {
                     alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(56,189,248,0.1); color:var(--accent-blue); border-color:var(--accent-blue);">❄️ PROMEMORIA PC: Esegui l'archiviazione a freddo dell'anno precedente.</div>`;
                 }
-                if (oggi.getDate() >= 27) {
+                if (oggi.getDate() >= 27 || oggi.getDate() === 1) {
                     let annoAttuale = oggi.getFullYear(); let meseAttuale = oggi.getMonth() + 1;
                     const firmaAttuale = annoAttuale + "-" + String(meseAttuale).padStart(2, '0');
                     let dataProssimo = new Date(annoAttuale, oggi.getMonth() + 1, 1);
@@ -413,7 +431,7 @@
                         if (r.mese === "prossimo") return r.ultima_esecuzione !== firmaProssimo;
                         return false;
                     });
-                    if (mancano) { alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2">🔁 PROMEMORIA RICORRENTI: Ci sono scadenze mensili da inserire.</div>`; }
+                    if (mancano) { alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2">🔁 PROMEMORIA RICORRENTI: Ci sono scadenze fisse mensili da immettere.</div>`; }
                 }
             }
             checkRicorrentiStatus();
@@ -571,23 +589,18 @@
             if(isInspectionMode) return; 
             const t = db.transazioni.find(x => x.id === id);
             if (!t) return;
-            
             t.confermato = true; 
-            
             const parts = t.data.split('-');
-            if (parts.length === 3) {
-                ricalcolaAddebitoCarta(parseInt(parts[0]), parseInt(parts[1]));
-            }
-            
+            if (parts.length === 3) ricalcolaAddebitoCarta(parseInt(parts[0]), parseInt(parts[1]));
             saveData(); 
             renderTable(activeViewMode); 
         }
 
-        function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
+        function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata di un mese"); }
         
         function delT(id) {
             if (isInspectionMode) return;
-            if (confirm('Eliminare operazione?')) {
+            if (confirm('Eliminare operazione definitivamente?')) {
                 const t = db.transazioni.find(x => x.id === id);
                 if (t && t.isFondoTransfer) {
                     const f = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
@@ -613,7 +626,7 @@
                 }
             }); 
         }
-        function delR(id) { if(isInspectionMode) return; if (confirm('Eliminare?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
+        function delR(id) { if(isInspectionMode) return; if (confirm('Eliminare configurazione ricorrente?')){ db.ricorrenti = db.ricorrenti.filter(x => x.id !== id); saveData(); renderRenovations(); } }
         function apriModalRicorrente() { if(isInspectionMode) return; document.getElementById('form-ricorrenti').reset(); document.getElementById('ric-id').value = ''; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         function editRicorrente(id) { if(isInspectionMode) return; const r = db.ricorrenti.find(x => x.id === id); if(!r) return; document.getElementById('ric-id').value = r.id; document.getElementById('ric-tipo').value = r.tipo; document.getElementById('ric-mese').value = r.mese; document.getElementById('ric-giorno').value = r.giorno; document.getElementById('ric-categoria').value = r.categoria || 'Altro'; document.getElementById('ric-causale').value = r.causale; document.getElementById('ric-importo').value = r.importo; const myModal = new bootstrap.Modal(document.getElementById('modalRicorrente')); myModal.show(); }
         
@@ -673,9 +686,9 @@
                 }
             });
             if (ins > 0) {
-                saveData(); renderTable(activeViewMode); showToast(`⚡ Inseriti ${ins} ricorrenti con successo!`);
+                saveData(); renderTable(activeViewMode); showToast(`⚡ Inseriti ${ins} pagamenti ricorrenti!`);
             } else {
-                showToast("Nessun ricorrente da inserire per questo periodo.");
+                showToast("Nessun ricorrente rimasto da inserire in questo mese.");
             }
         }
 
@@ -693,7 +706,7 @@
         }
 
         async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
-        async function ripristinaDaServer() { if(isInspectionMode) return; const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
+        async function ripristinaDaServer() { if(isInspectionMode) return; const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare l'archivio ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
         
         async function archiviaAFreddo() { 
             if (isInspectionMode) return; 
@@ -701,7 +714,7 @@
             if (isNaN(y)) return; 
             
             const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); 
-            if (target.length && confirm(`Spostare ${target.length} transazioni nell'archivio sul PC?`)) { 
+            if (target.length && confirm(`Vuoi spostare ${target.length} transazioni nell'archivio freddo sul PC?`)) { 
                 
                 let impattoSaldoStorico = 0;
                 target.forEach(t => {
@@ -741,7 +754,7 @@
                     db.transazioni.push(rigaRiporto); 
                     
                     saveData(); 
-                    showToast("❄️ Archiviato! Generata riga di riporto saldo.");
+                    showToast("❄️ Archiviato con successo! Creata riga di riporto saldo storico.");
                     setTimeout(() => location.reload(), 1000); 
                 } 
             } 
@@ -759,7 +772,7 @@
                     isInspectionMode = true; 
                     document.getElementById('fab-add').classList.add('hidden');
                     updateDashboard(); naviga('home'); 
-                    showToast("🔍 Ispezione attiva! I dati reali sono al sicuro.");
+                    showToast("🔍 Ispezione attiva! I dati reali sono protetti.");
                 } catch(err) { alert("File di backup non valido."); } 
             }; 
             r.readAsText(file); 
@@ -767,16 +780,16 @@
 
         function importaFileBackup() { 
             const file = document.getElementById('file-import').files[0]; if (!file) return; 
-            if (!confirm("⚠️ Attenzione! Questa operazione sovrascriverà definitivamente il database attuale. Vuoi procedere?")) return;
+            if (!confirm("⚠️ Questa azione sovrascriverà l'intero database corrente. Continuare?")) return;
             const r = new FileReader(); 
             r.onload = e => { 
                 try { 
                     db = JSON.parse(e.target.result); 
                     sanitizeDatabase(); isInspectionMode = false;
                     localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); 
-                    alert("📥 Database ripristinato con successo! L'applicazione sarà riavviata.");
+                    alert("📥 Database sovrascritto e ripristinato! L'app verrà ricaricata.");
                     location.reload();
-                } catch(err) { alert("File non valido o corrotto"); } 
+                } catch(err) { alert("File non integro o corrotto."); } 
             }; 
             r.readAsText(file); 
         }
@@ -796,7 +809,7 @@
         
         function confermaTutteCarte() { 
             if(isInspectionMode) return;
-            if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
+            if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare le spese solo dalla scheda Archivio!"); return; }
             
             const sA_el = document.getElementById('filter-anno'); 
             const sM_el = document.getElementById('filter-mese');
@@ -855,19 +868,19 @@
                 }
                 saveData(); 
                 renderTable(activeViewMode); 
-                showToast("Spese confermate e Addebito generato/aggiornato!"); 
+                showToast("Spese consolidate. Riga di addebito conto generata/aggiornata."); 
             } else { 
                 if (modificate) { saveData(); renderTable(activeViewMode); }
-                showToast("Nessuna operazione da confermare qui."); 
+                showToast("Nessuna spesa pendente trovata in questo periodo."); 
             }
         }
 
         function exportToPDF(type) { 
-            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT " + type.toUpperCase();
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT GESTIONALE - " + type.toUpperCase();
             let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = [];
             if (type === 'fondi') {
-                head = [['Nome Fondo', '', '', 'Disponibilità Attuale']];
-                body.push(['Fondo Personale', '', '', 'Euro ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', 'Euro ' + db.fondi.risparmi.toFixed(2)]);
+                head = [['Nome Fondo', '', '', 'Saldo Attuale']];
+                body.push(['Fondo Personale', '', '', '€ ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', '€ ' + db.fondi.risparmi.toFixed(2)]);
             } else if (type === 'ricorrenti') {
                 head = [['Scadenza', 'Causale', 'Categoria', 'Importo']];
                 document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => {
