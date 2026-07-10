@@ -75,7 +75,7 @@
                 <button onclick="document.getElementById('fast-sync-file').click()" class="btn w-100 rounded-pill fw-bold mb-3 py-2" style="background-color: #93c5fd; color: #0f172a; border: none;">↻ Verifica data.json</button>
                 <button onclick="enterApp('home')" class="btn w-100 rounded-pill fw-bold py-2 mb-2" style="border: 1px solid #4ade80; color: #4ade80; background: transparent;">⤬ Salta e usa locali</button>
             </div>
-            <a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold">Gestione Manuale (Avanzato)</a>
+            <div class="text-center"><a href="#" onclick="enterApp('backup')" class="text-muted small text-decoration-none fw-bold">Gestione Manuale (Avanzato)</a></div>
         </div>
     </div>
 
@@ -390,7 +390,7 @@
             document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`; document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
             if (document.getElementById('tot-personale-sec')) { document.getElementById('tot-personale-sec').innerText = "€ " + db.fondi.personale.toFixed(2); }
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
-            document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati aggiornati al: --/-- ore --:--";
+            document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati updated al: --/-- ore --:--";
             
             const alertContainer = document.getElementById('alert-container');
             if (alertContainer) {
@@ -567,7 +567,22 @@
             tbody.innerHTML = htmlRighe;
         }
 
-        function conf(id) { if(isInspectionMode) return; db.transazioni.find(x => x.id === id).confermato = true; saveData(); renderTable(activeViewMode); }
+        function conf(id) { 
+            if(isInspectionMode) return; 
+            const t = db.transazioni.find(x => x.id === id);
+            if (!t) return;
+            
+            t.confermato = true; 
+            
+            const parts = t.data.split('-');
+            if (parts.length === 3) {
+                ricalcolaAddebitoCarta(parseInt(parts[0]), parseInt(parts[1]));
+            }
+            
+            saveData(); 
+            renderTable(activeViewMode); 
+        }
+
         function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
         function delT(id) {
@@ -780,29 +795,69 @@
         function confermaTutteCarte() { 
             if(isInspectionMode) return;
             if (activeViewMode !== 'archivio') { showToast("⚠️ Puoi confermare il mese solo dall'Archivio!"); return; }
-            let modificate = false; let totaleDaAddebitare = 0; let meseRiferimento = null; let annoRiferimento = null;
-            const mode = activeViewMode; const sA_el = document.getElementById('filter-anno'); const sM_el = document.getElementById('filter-mese');
-            let sA = sA_el ? parseInt(sA_el.value) : null; let sM = sM_el ? parseInt(sM_el.value) : null;
+            
+            const sA_el = document.getElementById('filter-anno'); 
+            const sM_el = document.getElementById('filter-mese');
+            let sA = sA_el ? parseInt(sA_el.value) : null; 
+            let sM = sM_el ? parseInt(sM_el.value) : null;
+            if (!sA || !sM) return;
+            
+            let modificate = false;
             
             db.transazioni.forEach(t => {
                 if (t && t.sezione === 'carta' && !t.confermato && t.data) {
-                    const parts = t.data.split('-'); const tAnno = parseInt(parts[0]); const tMese = parseInt(parts[1]);
-                    let con = false;
-                    if (mode === 'archivio' && sA && sM) { if (tAnno === sA && tMese === sM) { con = true; meseRiferimento = sM; annoRiferimento = sA; } }
-                    if (con) { t.confermato = true; modificate = true; totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo); }
+                    const parts = t.data.split('-');
+                    if (parseInt(parts[0]) === sA && parseInt(parts[1]) === sM) {
+                        t.confermato = true;
+                        modificate = true;
+                    }
                 }
             });
-            if (modificate) { 
-                if (totaleDaAddebitare > 0) {
-                    const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-                    let nomeMese = nomiMesi[meseRiferimento]; let meseAddebito = meseRiferimento + 1; let annoAddebito = annoRiferimento;
-                    if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
-                    let dataAddebito = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
-                    totaleDaAddebitare = parseFloat(totaleDaAddebitare.toFixed(2));
-                    db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
+            
+            let totaleDaAddebitare = 0;
+            db.transazioni.forEach(t => {
+                if (t && t.sezione === 'carta' && t.confermato && t.data) {
+                    const parts = t.data.split('-');
+                    if (parseInt(parts[0]) === sA && parseInt(parts[1]) === sM) {
+                        totaleDaAddebitare += (t.tipo === 'uscita' ? t.importo : -t.importo);
+                    }
                 }
-                saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
-            } else { showToast("Nessuna operazione da confermare qui."); }
+            });
+            
+            if (totaleDaAddebitare > 0) { 
+                const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+                let nomeMese = nomiMesi[sM]; 
+                let meseAddebito = sM + 1; 
+                let annoAddebito = sA;
+                if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
+                let dataAddebito = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
+                
+                const causaleDaCercare = `Saldo Carta mese di ${nomeMese}`;
+                let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare && x.data === dataAddebito);
+                
+                if (rigaAddebito) {
+                    rigaAddebito.importo = parseFloat(totaleDaAddebitare.toFixed(2));
+                } else {
+                    db.transazioni.push({ 
+                        id: generateSecureId(), 
+                        sezione: 'conto', 
+                        tipo: 'uscita', 
+                        data: dataAddebito, 
+                        causale: causaleDaCercare, 
+                        categoria: 'Altro', 
+                        importo: parseFloat(totaleDaAddebitare.toFixed(2)), 
+                        confermato: false, 
+                        isFondoTransfer: false, 
+                        targetFondo: null 
+                    });
+                }
+                saveData(); 
+                renderTable(activeViewMode); 
+                showToast("Spese confermate e Addebito generato/aggiornato!"); 
+            } else { 
+                if (modificate) { saveData(); renderTable(activeViewMode); }
+                showToast("Nessuna operazione da confermare qui."); 
+            }
         }
 
         function exportToPDF(type) { 
