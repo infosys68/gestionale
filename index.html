@@ -802,7 +802,7 @@
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
                 }
                 saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
-            } else { showToast("Nessuna operazione da confermare hier."); }
+            } else { showToast("Nessuna operazione da confermare qui."); }
         }
 
         function exportToPDF(type) { 
