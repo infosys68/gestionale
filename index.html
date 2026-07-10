@@ -390,7 +390,7 @@
             document.getElementById('dash-fondo-personale').innerText = `€ ${db.fondi.personale.toFixed(2)}`; document.getElementById('dash-fondo-risparmi').innerText = `€ ${db.fondi.risparmi.toFixed(2)}`;
             if (document.getElementById('tot-personale-sec')) { document.getElementById('tot-personale-sec').innerText = "€ " + db.fondi.personale.toFixed(2); }
             if (document.getElementById('tot-risparmi-sec')) { document.getElementById('tot-risparmi-sec').innerText = "€ " + db.fondi.risparmi.toFixed(2); }
-            document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati updated al: --/-- ore --:--";
+            document.getElementById('last-update-reg').innerText = db.last_update ? "Dati aggiornati al: " + db.last_update : "Dati aggiornati al: --/-- ore --:--";
             
             const alertContainer = document.getElementById('alert-container');
             if (alertContainer) {
@@ -709,8 +709,8 @@
                         let imp = t.importo;
                         if (t.sezione === 'conto') {
                             if (t.tipo === 'entrata') impattoSaldoStorico += imp; else impattoSaldoStorico -= imp;
-                        } else if (t.sezione === 'carta' && !t.confermato) {
-                            if (t.tipo === 'uscita') impattoSaldoStorico -= imp; else impattoSaldoStorico += imp;
+                        } else if (t.sezione === 'carta') {
+                            if (t.tipo === 'uscita' && t.confermato) impattoSaldoStorico -= imp; else if (t.tipo === 'entrata' && t.confermato) impattoSaldoStorico += imp;
                         }
                     }
                 });
