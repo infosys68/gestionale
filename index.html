@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
+    <link class="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -30,10 +30,7 @@
         .modal-content { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8) !important; border-radius: 24px; }
         .table { --bs-table-bg: transparent; color: var(--text-main) !important; }
         .table td, .table th { border-color: var(--border-color) !important; }
-        
-        /* RETE DI CONTENIMENTO GRAFICA RENDERING AD IMPATTO CPU ZERO PER IL PIXEL */
         #transazioni-tbody tr { content-visibility: auto; contain-intrinsic-size: 0 45px; }
-        
         .nav-pills .nav-link { color: var(--text-muted); border-radius: 50px; font-weight: 600; }
         .nav-pills .nav-link.active { background-color: rgba(56, 189, 248, 0.1) !important; color: var(--accent-blue) !important; }
         .entrata { color: var(--accent-green) !important; font-weight: bold; }
@@ -87,10 +84,10 @@
             <div class="dropdown">
                 <button class="btn btn-dark btn-sm dropdown-toggle fw-bold rounded-pill px-3 shadow-sm" type="button" data-bs-toggle="dropdown">Menu</button>
                 <ul class="dropdown-menu shadow-lg mt-2 p-2">
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-conto text-center" href="#" onclick="naviga('conto')">Gestione Conto</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-carta text-center" href="#" onclick="naviga('carta')">Carta di Credito</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 bg-ricorrenti text-center" href="#" onclick="naviga('ricorrenti')">Pagamenti Ricorrenti</a></li>
-                    <li><a class="dropdown-item fw-bold py-2 mb-0 rounded-3 bg-fondi text-center" href="#" onclick="naviga('fondi')">Gestione Fondi</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 text-center" href="#" onclick="naviga('conto')">Gestione Conto</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 text-center" href="#" onclick="naviga('carta')">Carta di Credito</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-2 rounded-3 text-center" href="#" onclick="naviga('ricorrenti')">Pagamenti Ricorrenti</a></li>
+                    <li><a class="dropdown-item fw-bold py-2 mb-0 rounded-3 text-center" href="#" onclick="naviga('fondi')">Gestione Fondi</a></li>
                 </ul>
             </div>
             <div class="d-flex gap-1 align-items-center">
@@ -206,9 +203,8 @@
         <button id="fab-add" class="fab-btn hidden" onclick="apriModalTransazione()">+</button>
     </div>
 
-    <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
-    <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" inputmode="numeric" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" list="causali-rapide" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
-    <datalist id="causali-rapide"><option value="Assicurazione"></option><option value="Benzina"></option><option value="Bolletta gas"></option><option value="Bolletta luce"></option><option value="Bollo"></option><option value="Bonifico da"></option><option value="Bonifico in favore di"></option><option value="Giroconto"></option><option value="GPL"></option><option value="Prelievo banca"></option><option value="Supermercato"></option><option value="Tari"></option><option value="Versamento assegno"></option><option value="Versamento contanti"></option></datalist>
+    <div class="modal fade" id="modalTransazione" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-transazione" onsubmit="addTransaction(event)"><input type="hidden" id="trans-id"><div class="form-floating mb-3"><select id="trans-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo Movimento</label></div><div class="form-floating mb-3"><input type="date" id="trans-data" class="form-control" required><label>Data</label></div><div class="form-floating mb-3"><select id="trans-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="trans-causale" class="form-control" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="trans-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-primary text-dark w-100 rounded-pill py-3 fw-bold shadow-sm">Salva Movimento</button></form></div></div></div></div>
+    <div class="modal fade" id="modalRicorrente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body"><form id="form-ricorrenti" onsubmit="addRicorrente(event)"><input type="hidden" id="ric-id"><div class="form-floating mb-3"><select id="ric-tipo" class="form-select"><option value="uscita">Uscita (-)</option><option value="entrata">Entrata (+)</option></select><label>Tipo</label></div><div class="form-floating mb-3"><select id="ric-mese" class="form-select"><option value="attuale">Mese Corrente</option><option value="prossimo">Mese Prossimo</option></select><label>Competenza</label></div><div class="form-floating mb-3"><input type="number" id="ric-giorno" class="form-control" min="1" max="31" placeholder="Giorno" inputmode="numeric" required><label>Giorno Scadenza (1-31)</label></div><div class="form-floating mb-3"><select id="ric-categoria" class="form-select" required><option value="Alimentari">🛒 Alimentari</option><option value="Utenze">💡 Utenze & Bollette</option><option value="Auto">🚗 Auto & Trasporti</option><option value="Casa">🏠 Casa</option><option value="Salute">💊 Salute</option><option value="Svago">🍿 Svago & Ristoranti</option><option value="Personale">🛍️ Shopping Personale</option><option value="Risparmio">💰 Risparmio & Investimenti</option><option value="Reddito">💼 Entrate / Stipendio</option><option value="Altro" selected>📌 Altro</option></select><label>Categoria</label></div><div class="form-floating mb-3"><input type="text" id="ric-causale" class="form-control" placeholder="Causale" required><label>Causale</label></div><div class="form-floating mb-4"><input type="number" id="ric-importo" class="form-control" step="0.01" placeholder="Importo" inputmode="decimal" required><label>Importo (€)</label></div><button type="submit" class="btn btn-warning w-100 rounded-pill py-3 fw-bold text-dark shadow-sm">Salva Configurazione</button></form></div></div></div></div>
 
     <div class="position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index: 1100">
         <div id="main-toast" class="toast align-items-center text-white bg-dark border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
@@ -256,10 +252,6 @@
                 if (!db) db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
                 if (!Array.isArray(db.transazioni)) db.transazioni = [];
                 if (!Array.isArray(db.ricorrenti)) db.ricorrenti = [];
-                
-                db.transazioni = db.transazioni.filter(t => t !== null && typeof t === 'object');
-                db.ricorrenti = db.ricorrenti.filter(r => r !== null && typeof r === 'object');
-                
                 if (!db.fondi) db.fondi = { personale: 0, risparmi: 0 };
                 
                 db.fondi.personale = cleanNumeric(db.fondi.personale); 
@@ -403,23 +395,18 @@
             const alertContainer = document.getElementById('alert-container');
             if (alertContainer) {
                 alertContainer.innerHTML = '';
-                
                 if (isInspectionMode) {
                     alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(245,158,11,0.2); color:var(--accent-orange); border-color:var(--accent-orange); font-size:0.9rem;">🔍 MODALITÀ ISPEZIONE ATTIVA<br><span style="font-size:0.75rem; font-weight:normal;">Stai guardando un file di backup. Nessuna modifica verrà salvata. Riavvia la pagina per uscire.</span></div>`;
                 }
-                
                 if (saldo < 0) { alertContainer.innerHTML += `<div class="alert-negativo d-block mb-2">⚠️ ATTENZIONE: CONTO IN NEGATIVO</div>`; }
-                
                 if (isServerMode && oggi.getMonth() === 2) {
                     alertContainer.innerHTML += `<div class="alert-ricorrenti d-block mb-2" style="background:rgba(56,189,248,0.1); color:var(--accent-blue); border-color:var(--accent-blue);">❄️ PROMEMORIA PC: Esegui l'archiviazione a freddo dell'anno precedente.</div>`;
                 }
-                
                 if (oggi.getDate() >= 27) {
                     let annoAttuale = oggi.getFullYear(); let meseAttuale = oggi.getMonth() + 1;
                     const firmaAttuale = annoAttuale + "-" + String(meseAttuale).padStart(2, '0');
                     let dataProssimo = new Date(annoAttuale, oggi.getMonth() + 1, 1);
                     const firmaProssimo = dataProssimo.getFullYear() + "-" + String(dataProssimo.getMonth() + 1).padStart(2, '0');
-                    
                     let mancano = db.ricorrenti.some(r => {
                         if (!r) return false;
                         if (r.mese === "attuale") return r.ultima_esecuzione !== firmaAttuale;
@@ -437,7 +424,6 @@
             const firmaAttuale = annoAttuale + "-" + String(meseAttuale).padStart(2, '0');
             let dataProssimo = new Date(annoAttuale, o.getMonth() + 1, 1);
             const firmaProssimo = dataProssimo.getFullYear() + "-" + String(dataProssimo.getMonth() + 1).padStart(2, '0');
-            
             let mancano = db.ricorrenti.some(r => {
                 if (!r) return false;
                 if (r.mese === "attuale") return r.ultima_esecuzione !== firmaAttuale;
@@ -471,10 +457,8 @@
                     }
                 }
             });
-            
             const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
             const causaleDaCercare = "Saldo Carta mese di " + nomiMesi[mese];
-            
             let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare);
             if (rigaAddebito) {
                 if (nuovoTotale > 0) {
@@ -507,7 +491,6 @@
                 const partsVecchia = vecchia.data.split('-');
                 if (partsVecchia.length === 3) ricalcolaAddebitoCarta(parseInt(partsVecchia[0]), parseInt(partsVecchia[1]));
             }
-
             saveData(); renderTable(activeViewMode); bootstrap.Modal.getInstance(document.getElementById('modalTransazione')).hide();
         }
 
@@ -537,7 +520,6 @@
                         }
                     } catch(e) { console.error("Impossibile connettersi all'archivio freddo server", e); }
                 }
-                
                 dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; });
                 if (searchVal) dati = dati.filter(t => t.causale && t.causale.toLowerCase().includes(searchVal));
             } else {
@@ -565,12 +547,10 @@
                         }
                     }
                 }
-                
                 let tastiAzione = '';
                 if (!isInspectionMode) {
                     tastiAzione = `<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
                 }
-                
                 htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
                     <td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
@@ -585,23 +565,20 @@
         function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata"); }
         
         function delT(id) {
-            if(isInspectionMode) return;
+            if (isInspectionMode) return;
             if (confirm('Eliminare operazione?')) {
                 const t = db.transazioni.find(x => x.id === id);
                 if (t && t.isFondoTransfer) {
                     const f = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
                     if (t.tipo === 'entrata') db.fondi[f] += t.importo; if (t.tipo === 'uscita') db.fondi[f] -= t.importo;
                 }
-                
                 let ricalcolaMese = null; let ricalcolaAnno = null;
                 if (t && t.sezione === 'carta' && t.confermato && t.data) {
                     const parts = t.data.split('-');
                     if (parts.length === 3) { ricalcolaAnno = parseInt(parts[0]); ricalcolaMese = parseInt(parts[1]); }
                 }
-                
                 db.transazioni = db.transazioni.filter(t => t.id !== id); 
                 if (ricalcolaMese !== null && ricalcolaAnno !== null) ricalcolaAddebitoCarta(ricalcolaAnno, ricalcolaMese);
-                
                 saveData(); renderTable(activeViewMode);
             }
         }
@@ -631,21 +608,17 @@
         function inserisciTuttiRicorrenti() {
             if(isInspectionMode) return;
             const oggi = new Date();
-            
             let annoAttuale = oggi.getFullYear();
             let meseAttuale = oggi.getMonth() + 1;
             const firmaAttuale = annoAttuale + "-" + String(meseAttuale).padStart(2, '0');
-            
             let dataProssimo = new Date(annoAttuale, oggi.getMonth() + 1, 1);
             let annoProssimo = dataProssimo.getFullYear();
             let meseProssimo = dataProssimo.getMonth() + 1;
             const firmaProssimo = annoProssimo + "-" + String(meseProssimo).padStart(2, '0');
-            
             let ins = 0;
             
             db.ricorrenti.forEach(r => {
                 if (!r) return;
-                
                 if (r.mese === "attuale") {
                     if (r.ultima_esecuzione !== firmaAttuale) {
                         db.transazioni.push({
@@ -678,11 +651,8 @@
                     }
                 }
             });
-            
             if (ins > 0) {
-                saveData();
-                renderTable(activeViewMode);
-                showToast(`⚡ Inseriti ${ins} ricorrenti con successo!`);
+                saveData(); renderTable(activeViewMode); showToast(`⚡ Inseriti ${ins} ricorrenti con successo!`);
             } else {
                 showToast("Nessun ricorrente da inserire per questo periodo.");
             }
@@ -693,17 +663,67 @@
             const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
             if (action === 'aggiungi') {
-                db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, category: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (val > db.fondi[tipoFondo]) return showToast("Fondi insufficienti!");
-                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, category: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             }
             input.value = ''; saveData();
         }
 
         async function caricaStoricoBackups() { try { const res = await fetch('/api/backups'); if (res.ok) { const b = await res.json(); const sel = document.getElementById('select-backups-server'); sel.innerHTML = ''; b.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`); } } catch(e){} }
         async function ripristinaDaServer() { if(isInspectionMode) return; const f = document.getElementById('select-backups-server').value; if (f && confirm(`Ripristinare ${f}?`)) { const res = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: f }) }); if (res.ok) location.reload(); } }
-        async function archiviaAFreddo() { if(isInspectionMode) return; const y = parseInt(document.getElementById('archive-year-input').value); if (isNaN(y)) return; const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); if (target.length && confirm(`Spostare ${target.length} transazioni?`)) { const res = await fetch('/api/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year: y, data: target }) }); if (res.ok) { db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); saveData(); setTimeout(() => location.reload(), 1000); } } }
+        
+        async function archiviaAFreddo() { 
+            if (isInspectionMode) return; 
+            const y = parseInt(document.getElementById('archive-year-input').value); 
+            if (isNaN(y)) return; 
+            
+            const target = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) <= y); 
+            if (target.length && confirm(`Spostare ${target.length} transazioni nell'archivio sul PC?`)) { 
+                
+                let impattoSaldoStorico = 0;
+                target.forEach(t => {
+                    if (t && !t.isFondoTransfer && t.data) {
+                        let imp = t.importo;
+                        if (t.sezione === 'conto') {
+                            if (t.tipo === 'entrata') impattoSaldoStorico += imp; else impattoSaldoStorico -= imp;
+                        } else if (t.sezione === 'carta' && !t.confermato) {
+                            if (t.tipo === 'uscita') impattoSaldoStorico -= imp; else impattoSaldoStorico += imp;
+                        }
+                    }
+                });
+
+                const res = await fetch('/api/archive', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ year: y, data: target }) 
+                }); 
+                
+                if (res.ok) { 
+                    const rigaRiporto = {
+                        id: generateSecureId(),
+                        sezione: 'conto',
+                        tipo: impattoSaldoStorico >= 0 ? 'entrata' : 'uscita',
+                        data: (y + 1) + "-01-01",
+                        causale: `Riporto Saldo Storico dopo archiviazione anno ${y}`,
+                        categoria: 'Altro',
+                        importo: Math.abs(parseFloat(impattoSaldoStorico.toFixed(2))),
+                        confermato: true,
+                        isFondoTransfer: false,
+                        targetFondo: null
+                    };
+
+                    db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); 
+                    db.transazioni.push(rigaRiporto); 
+                    
+                    saveData(); 
+                    showToast("❄️ Archiviato! Generata riga di riporto saldo.");
+                    setTimeout(() => location.reload(), 1000); 
+                } 
+            } 
+        }
+
         function esportaFileBackup() { const now = new Date(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const a = document.createElement('a'); a.href = dataStr; a.download = "backup_gestionale_" + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + ".json"; document.body.appendChild(a); a.click(); a.remove(); }
         
         function ispezionaFileBackup() {
@@ -715,8 +735,7 @@
                     sanitizeDatabase(); 
                     isInspectionMode = true; 
                     document.getElementById('fab-add').classList.add('hidden');
-                    updateDashboard(); 
-                    naviga('home'); 
+                    updateDashboard(); naviga('home'); 
                     showToast("🔍 Ispezione attiva! I dati reali sono al sicuro.");
                 } catch(err) { alert("File di backup non valido."); } 
             }; 
@@ -730,10 +749,8 @@
             r.onload = e => { 
                 try { 
                     db = JSON.parse(e.target.result); 
-                    sanitizeDatabase(); 
-                    isInspectionMode = false;
-                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); 
-                    saveData(); 
+                    sanitizeDatabase(); isInspectionMode = false;
+                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); 
                     alert("📥 Database ripristinato con successo! L'applicazione sarà riavviata.");
                     location.reload();
                 } catch(err) { alert("File non valido o corrotto"); } 
@@ -775,6 +792,7 @@
                     let nomeMese = nomiMesi[meseRiferimento]; let meseAddebito = meseRiferimento + 1; let annoAddebito = annoRiferimento;
                     if (meseAddebito > 12) { meseAddebito = 1; annoAddebito++; }
                     let dataAddebito = annoAddebito + "-" + String(meseAddebito).padStart(2, '0') + "-15";
+                    totaleDaAddebitare = parseFloat(totaleDaAddebitare.toFixed(2));
                     db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: dataAddebito, causale: `Saldo Carta mese di ${nomeMese}`, categoria: 'Altro', importo: totaleDaAddebitare, confermato: false, isFondoTransfer: false, targetFondo: null });
                 }
                 saveData(); renderTable(activeViewMode); showToast("Spese confermate e Addebito generato!"); 
