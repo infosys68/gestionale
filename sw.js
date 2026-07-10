@@ -1,7 +1,8 @@
-// FORZATO IL BUMP A V7 PER EVINCERE LA VECCHIA CACHE GRAFICA SUL PIXEL
-const CACHE_NAME = 'gestionale-cache-v7-titanium'; 
+// FORZATO IL BUMP A V8 PER FORZARE L'AGGIORNAMENTO DELLA CACHE CON IL BLINDAGGIO INDEX
+const CACHE_NAME = 'gestionale-cache-v8-titanium'; 
 const urlsToCache = [
   './',
+  './index.html', // RISOLUZIONE BUG ANDROID: Garantisce l'avvio offline se richiamato esplicitamente
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
