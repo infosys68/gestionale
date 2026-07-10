@@ -164,6 +164,14 @@
 
             <div id="backup-section" class="section-container hidden">
                 <h3 class="mb-4 fw-bold text-white px-2">⚙️ Dati e Sincronizzazione</h3>
+                
+                <div class="card p-4 shadow-sm border-0 rounded-4 border border-warning mb-4">
+                    <h5 class="text-warning">🔑 Chiave di Sicurezza Cloud</h5>
+                    <p class="small text-muted">Inserisci la tua password contabile per autorizzare questo dispositivo specifico a connettersi a Drive.</p>
+                    <input type="password" id="cloud-token-input" class="form-control mb-3 text-center rounded-pill" placeholder="•••••••••">
+                    <button onclick="salvaTokenCloud()" class="btn btn-warning text-dark w-100 rounded-pill fw-bold">Salva Chiave sul Dispositivo</button>
+                </div>
+
                 <div id="pc-history-block" class="card p-4 shadow-sm border-0 rounded-4 border mb-4 hidden">
                     <h5 style="color: var(--accent-blue);">📜 Storico Backups del Server</h5>
                     <div class="mb-3"><select id="select-backups-server" class="form-select rounded-pill"></select></div>
@@ -208,9 +216,11 @@
         let isInspectionMode = false;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
-        // INDIRIZZI E CHIAVI DI ACCESSO HTTPS POST CIFRATI
+        // INDIRIZZO STATICO DELLA WEB APP DI GOOGLE
         const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxQ-Uilb-9aIWSGANrMkC-nn6mL-lYmKgBXwXSSaeyqdCLRz0PvNXeJjcFATkrdlcCx/exec";
-        const CLOUD_TOKEN = "Teo!!!2017";
+        
+        // 🌟 ARCHITETTURA DI SICUREZZA INTERNA: La password viene letta dal database isolato locale
+        const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
@@ -322,7 +332,7 @@
                             }
                         }
                     } catch(e) {
-                        showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
+                        showToast("⚠️ Cloud non raggiungibile o chiave mancante. Modalità offline attiva.");
                     }
                     enterApp('home');
                 }
@@ -359,7 +369,7 @@
                         showToast("☁️ Sincronizzato su Google Drive!");
                     }
                 }).catch(() => {
-                    showToast("⚠️ Salvato localmente. In attesa di connessione.");
+                    showToast("⚠️ Salvato localmente. Sincronizzazione cloud in coda.");
                 });
             }
         }
@@ -397,7 +407,7 @@
                         if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += imp; else saldoContabile -= imp; }
                     } else if (t.sezione === 'carta') {
                         if (t.tipo === 'uscita' && parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) totaleCartaMese += imp;
-                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= imp; else saldo += imp; }
+                        if (!t.confermato) { if (t.tipo === 'uscita' && !t.confermato) saldo -= imp; else saldo += imp; }
                     }
                 }
             });
@@ -459,7 +469,7 @@
                 if (sezione === 'conto' || sezione === 'carta') { document.getElementById('transazioni-section').classList.remove('hidden'); document.getElementById('transazioni-title').innerText = (sezione === 'conto') ? '🏦 Conto' : '💳 Carta'; if(!isInspectionMode) document.getElementById('fab-add').classList.remove('hidden'); renderTable('corrente'); }
                 else if (sezione === 'ricorrenti') { document.getElementById('ricorrenti-section').classList.remove('hidden'); renderRenovations(); } 
                 else if (sezione === 'fondi') { document.getElementById('fondi-section').classList.remove('hidden'); updateDashboard(); } 
-                else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); if (isServerMode) { document.getElementById('pc-history-block').classList.remove('hidden'); caricaStoricoBackups(); } }
+                else if (sezione === 'backup') { document.getElementById('backup-section').classList.remove('hidden'); if (isServerMode) { document.getElementById('pc-history-block').classList.remove('hidden'); caricaStoricoBackups(); } mostraTokenEsistente(); }
             }
         }
 
@@ -900,6 +910,19 @@
             doc.save("Report_" + type + "_" + new Date().toISOString().split('T')[0] + ".pdf");
         }
         function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
+
+        // FUNCTIONS SPECIFICHE PER L'ARCHITETTURA DI SICUREZZA LOCALE DEL DISPOSITIVO
+        function salvaTokenCloud() {
+            const tokenInput = document.getElementById('cloud-token-input').value.trim();
+            if (!tokenInput) { alert("Inserisci una chiave valida!"); return; }
+            localStorage.setItem('gestionale_cloud_token', tokenInput);
+            showToast("🔑 Chiave salvata localmente sul dispositivo! Riavvio...");
+            setTimeout(() => location.reload(), 1200);
+        }
+        function mostraTokenEsistente() {
+            const input = document.getElementById('cloud-token-input');
+            if (input) { input.value = localStorage.getItem('gestionale_cloud_token') || ''; }
+        }
     </script>
 </body>
 </html>
