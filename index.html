@@ -304,32 +304,40 @@
         }
 
         // Funzione helper unificata per la sincronizzazione cloud all'avvio
-        async function syncCloudAndEnter() {
-            document.getElementById('login-screen').classList.add('hidden');
-            showToast("↻ Allineamento protetto cloud...");
-            try {
-                const res = await fetch(CLOUD_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
-                });
-                if (res.ok) {
-                    const cloudDb = await res.json();
-                    if (cloudDb && cloudDb.transazioni) {
-                        if ((Number(cloudDb.timestamp) || 0) > (Number(db.timestamp) || 0)) {
-                            db = cloudDb; sanitizeDatabase();
-                            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                            showToast("✔️ Allineato con l'ultimo file di Drive!");
-                        } else {
-                            showToast("✔️ Dati locali già aggiornati.");
-                        }
-                    }
+async function syncCloudAndEnter() {
+    document.getElementById('login-screen').classList.add('hidden');
+    showToast("↻ Allineamento protetto cloud...");
+    try {
+        const res = await fetch(CLOUD_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+        });
+        if (res.ok) {
+            const cloudDb = await res.json();
+            if (cloudDb && cloudDb.transazioni) {
+                const cloudTs = Number(cloudDb.timestamp) || 0;
+                const localTs = Number(db.timestamp) || 0;
+                
+                if (cloudTs > localTs) {
+                    // Il cloud è più recente -> Scarico i dati sul Pixel
+                    db = cloudDb; sanitizeDatabase();
+                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                    showToast("✔️ Scaricati ultimi dati da Drive!");
+                } else if (localTs > cloudTs) {
+                    // Il Pixel è più recente (spese fatte offline) -> Le spingo subito su Drive!
+                    showToast("🌐 Rilevate modifiche offline! Sincronizzazione in corso...");
+                    saveData();
+                } else {
+                    showToast("✔️ Dati in perfetto equilibrio.");
                 }
-            } catch(e) {
-                showToast("⚠️ Cloud non raggiungibile o chiave mancante. Modalità offline attiva.");
             }
-            enterApp('home');
         }
+    } catch(e) {
+        showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
+    }
+    enterApp('home');
+}
 
         async function checkPassword() {
             const inputVal = document.getElementById('password-input').value;
