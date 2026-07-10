@@ -60,7 +60,11 @@
             <h2 class="mb-4 fw-bold text-white">Gestionale</h2>
             <input type="password" id="password-input" class="form-control form-control-lg mb-4 text-center fw-bold pin-input" placeholder="•••••" inputmode="numeric" style="letter-spacing: 5px;" onkeydown="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow">Sblocca</button>
+            
             <div id="login-error" class="text-danger mt-3 hidden fw-bold" style="font-size: 0.85rem;">❌ PIN errato.</div>
+            
+            <!-- PULSANTE IMPRONTA DIGITALE (COMPARE SOLO SE ATTIVATA) -->
+            <button id="btn-biometric-login" onclick="sbloccaConImpronta()" class="btn btn-outline-info btn-lg w-100 rounded-pill fw-bold shadow mt-3 hidden">🧬 Sblocca con Impronta</button>
         </div>
     </div>
 
@@ -165,11 +169,22 @@
             <div id="backup-section" class="section-container hidden">
                 <h3 class="mb-4 fw-bold text-white px-2">⚙️ Dati e Sincronizzazione</h3>
                 
+                <!-- CASSEFORTE LOCALE PER CHIAVE CLOUD (NON TRACCIATA SU GITHUB) -->
                 <div class="card p-4 shadow-sm border-0 rounded-4 border border-warning mb-4">
                     <h5 class="text-warning">🔑 Chiave di Sicurezza Cloud</h5>
                     <p class="small text-muted">Inserisci la tua password contabile per autorizzare questo dispositivo specifico a connettersi a Drive.</p>
                     <input type="password" id="cloud-token-input" class="form-control mb-3 text-center rounded-pill" placeholder="•••••••••">
-                    <button onclick="salvaTokenCloud()" class="btn btn-warning text-dark w-100 rounded-pill fw-bold">Salva Chiave sul Dispositivo</button>
+                    <button onclick="salvaTokenCloud()" class="btn btn-warning text-dark w-100 rounded-pill fw-bold">Salva Chiave</button>
+                </div>
+
+                <!-- SEZIONE BIOMETRIA (IMPRONTA) -->
+                <div id="biometric-card" class="card p-4 shadow-sm border-0 rounded-4 border border-info mb-4 hidden">
+                    <h5 class="text-info">🧬 Sblocco Biometrico</h5>
+                    <p class="small text-muted">Attiva l'impronta digitale del tuo Pixel per accedere al gestionale all'avvio senza digitare il PIN.</p>
+                    <div class="d-flex gap-2">
+                        <button onclick="registraImpronta()" class="btn btn-info text-dark w-50 rounded-pill fw-bold">Attiva</button>
+                        <button onclick="disattivaImpronta()" class="btn btn-outline-danger w-50 rounded-pill fw-bold">Disattiva</button>
+                    </div>
                 </div>
 
                 <div id="pc-history-block" class="card p-4 shadow-sm border-0 rounded-4 border mb-4 hidden">
@@ -216,11 +231,11 @@
         let isInspectionMode = false;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
-        // INDIRIZZO STATICO DELLA WEB APP DI GOOGLE
-	const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyC-BxUBrspzE0Ms6P6NM9YkRtlp8I1_h3pGZXbtNR-Ax9XZElNo_LBTZJSv1wk9QWE/exec";
-
-	// 🌟 ARCHITETTURA DI SICUREZZA INTERNA: La password viene letta dal database isolato locale
-const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
+        // NUOVO INDIRIZZO STATICO DELLA WEB APP DI GOOGLE (SUPER-BLINDATO)
+        const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyC-BxUBrspzE0Ms6P6NM9YkRtlp8I1_h3pGZXbtNR-Ax9XZElNo_LBTZJSv1wk9QWE/exec";
+        
+        // LETTURA TOKEN DALLA MEMORIA ISOLATA
+        const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
@@ -288,6 +303,34 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
             } catch (e) { console.error("Errore sanitizzazione strutturale:", e); }
         }
 
+        // Funzione helper unificata per la sincronizzazione cloud all'avvio
+        async function syncCloudAndEnter() {
+            document.getElementById('login-screen').classList.add('hidden');
+            showToast("↻ Allineamento protetto cloud...");
+            try {
+                const res = await fetch(CLOUD_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+                });
+                if (res.ok) {
+                    const cloudDb = await res.json();
+                    if (cloudDb && cloudDb.transazioni) {
+                        if ((Number(cloudDb.timestamp) || 0) > (Number(db.timestamp) || 0)) {
+                            db = cloudDb; sanitizeDatabase();
+                            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                            showToast("✔️ Allineato con l'ultimo file di Drive!");
+                        } else {
+                            showToast("✔️ Dati locali già aggiornati.");
+                        }
+                    }
+                }
+            } catch(e) {
+                showToast("⚠️ Cloud non raggiungibile o chiave mancante. Modalità offline attiva.");
+            }
+            enterApp('home');
+        }
+
         async function checkPassword() {
             const inputVal = document.getElementById('password-input').value;
             if (hashPIN(inputVal) === 49530741) { 
@@ -296,45 +339,25 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
                         const response = await fetch('/api/data');
                         if (response.ok) {
                             db = await response.json(); sanitizeDatabase();
-                            document.getElementById('login-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden');
-                            document.getElementById('note-area').value = db.note || ""; document.getElementById('trans-data').value = getLocalDateString();
+                            document.getElementById('login-screen').classList.add('hidden'); 
+                            document.getElementById('app-screen').classList.remove('hidden');
+                            document.getElementById('note-area').value = db.note || ""; 
+                            document.getElementById('trans-data').value = getLocalDateString();
                             populateAnnoFiltri(); naviga('home');
                         } else {
                             const errData = await response.json().catch(() => ({}));
                             document.getElementById('login-error').innerHTML = "⚠️ " + (errData.error || "Errore sincronizzazione.");
                             document.getElementById('login-error').classList.remove('hidden');
                         }
-                    } catch (e) { document.getElementById('login-error').innerHTML = "⚠️ Server offline."; document.getElementById('login-error').classList.remove('hidden'); }
+                    } catch (e) { 
+                        document.getElementById('login-error').innerHTML = "⚠️ Server offline."; 
+                        document.getElementById('login-error').classList.remove('hidden'); 
+                    }
                 } else {
                     const localData = localStorage.getItem('gestionale_db_pixel'); 
                     if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
                     sanitizeDatabase();
-                    
-                    document.getElementById('login-screen').classList.add('hidden');
-                    showToast("↻ Allineamento protetto cloud...");
-                    
-                    try {
-                        const res = await fetch(CLOUD_API_URL, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'text/plain' },
-                          body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
-                        });
-                        if (res.ok) {
-                            const cloudDb = await res.json();
-                            if (cloudDb && cloudDb.transazioni) {
-                                if ((Number(cloudDb.timestamp) || 0) > (Number(db.timestamp) || 0)) {
-                                    db = cloudDb; sanitizeDatabase();
-                                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                                    showToast("✔️ Allineato con l'ultimo file di Drive!");
-                                } else {
-                                    showToast("✔️ Dati locali già aggiornati.");
-                                }
-                            }
-                        }
-                    } catch(e) {
-                        showToast("⚠️ Cloud non raggiungibile o chiave mancante. Modalità offline attiva.");
-                    }
-                    enterApp('home');
+                    await syncCloudAndEnter();
                 }
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         }
@@ -346,10 +369,8 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
         }
 
         async function saveData() { 
-            if (isInspectionMode) {
-                alert("⚠️ Azione bloccata! Sei in 'Modalità Ispezione'. Riavvia la pagina per tornare ai dati reali.");
-                return;
-            }
+            if (isInspectionMode) { alert("⚠️ Azione bloccata! Sei in 'Modalità Ispezione'. Riavvia la pagina per tornare ai dati reali."); return; }
+            
             db.timestamp = Date.now(); 
             sanitizeDatabase(); db.last_update = getTimestampString(); 
             localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); updateDashboard(); updateExitButton();
@@ -391,7 +412,7 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
             noteTimeout = setTimeout(() => {
                 const c = document.getElementById('note-area').value;
                 if (db.note !== c) { db.note = c; saveData(); if (status) status.innerText = "💾 Salvato!"; setTimeout(() => { if(status) status.innerText=""; }, 1500); }
-            }, 1500);
+            }, 500); // OTTIMIZZAZIONE 500ms
         }
 
         function updateDashboard() {
@@ -909,9 +930,9 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
             doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } });
             doc.save("Report_" + type + "_" + new Date().toISOString().split('T')[0] + ".pdf");
         }
+        
         function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
 
-        // FUNCTIONS SPECIFICHE PER L'ARCHITETTURA DI SICUREZZA LOCALE DEL DISPOSITIVO
         function salvaTokenCloud() {
             const tokenInput = document.getElementById('cloud-token-input').value.trim();
             if (!tokenInput) { alert("Inserisci una chiave valida!"); return; }
@@ -923,6 +944,85 @@ const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
             const input = document.getElementById('cloud-token-input');
             if (input) { input.value = localStorage.getItem('gestionale_cloud_token') || ''; }
         }
+
+        // --- MOTORE BIOMETRICO (WEBAUTHN LOCAL-ONLY PIXEL) ---
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (window.PublicKeyCredential && !isServerMode) {
+                document.getElementById('biometric-card')?.classList.remove('hidden');
+                if (localStorage.getItem('biometric_enabled') === 'true') {
+                    document.getElementById('btn-biometric-login')?.classList.remove('hidden');
+                    setTimeout(() => { sbloccaConImpronta(); }, 500);
+                }
+            }
+        });
+
+        async function registraImpronta() {
+            try {
+                const idCasuale = crypto.getRandomValues(new Uint8Array(16));
+                const options = {
+                    publicKey: {
+                        challenge: crypto.getRandomValues(new Uint8Array(32)),
+                        rp: { name: "Gestionale", id: window.location.hostname },
+                        user: { id: idCasuale, name: "utente", displayName: "Utente Gestionale" },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        timeout: 60000
+                    }
+                };
+                const credential = await navigator.credentials.create(options);
+                if (credential) {
+                    const credIdB64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                    localStorage.setItem('biometric_cred_id', credIdB64);
+                    localStorage.setItem('biometric_enabled', 'true');
+                    showToast("🧬 Impronta registrata con successo!");
+                    setTimeout(() => location.reload(), 1000);
+                }
+            } catch (e) {
+                alert("Errore o registrazione annullata.");
+            }
+        }
+
+        function disattivaImpronta() {
+            localStorage.removeItem('biometric_enabled');
+            localStorage.removeItem('biometric_cred_id');
+            showToast("🧬 Impronta disattivata.");
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        async function sbloccaConImpronta() {
+            const credIdB64 = localStorage.getItem('biometric_cred_id');
+            if (!credIdB64) return;
+            try {
+                const rawId = Uint8Array.from(atob(credIdB64), c => c.charCodeAt(0));
+                const options = {
+                    publicKey: {
+                        challenge: crypto.getRandomValues(new Uint8Array(32)),
+                        rpId: window.location.hostname,
+                        allowCredentials: [{ type: 'public-key', id: rawId }],
+                        userVerification: "required",
+                        timeout: 60000
+                    }
+                };
+                const assertion = await navigator.credentials.get(options);
+                if (assertion) {
+                    const localData = localStorage.getItem('gestionale_db_pixel'); 
+                    if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
+                    sanitizeDatabase();
+                    await syncCloudAndEnter(); // Uso la nuova funzione helper ottimizzata
+                }
+            } catch (e) {
+                console.log("Sblocco biometrico non riuscito o annullato.");
+            }
+        }
+
+        // --- SENSORE DI RETE AUTONOMO PER LA SINCRONIZZAZIONE (OFFLINE TO ONLINE) ---
+        window.addEventListener('online', function() { 
+            if (dataChanged && !isServerMode) { 
+                showToast("🌐 Rete tornata! Sincronizzazione in coda..."); 
+                saveData(); 
+            } 
+        });
+
     </script>
 </body>
 </html>
