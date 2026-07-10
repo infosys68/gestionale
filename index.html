@@ -217,10 +217,10 @@
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         // INDIRIZZO STATICO DELLA WEB APP DI GOOGLE
-        const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxQ-Uilb-9aIWSGANrMkC-nn6mL-lYmKgBXwXSSaeyqdCLRz0PvNXeJjcFATkrdlcCx/exec";
-        
-        // 🌟 ARCHITETTURA DI SICUREZZA INTERNA: La password viene letta dal database isolato locale
-        const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
+	const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyC-BxUBrspzE0Ms6P6NM9YkRtlp8I1_h3pGZXbtNR-Ax9XZElNo_LBTZJSv1wk9QWE/exec";
+
+	// 🌟 ARCHITETTURA DI SICUREZZA INTERNA: La password viene letta dal database isolato locale
+const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
