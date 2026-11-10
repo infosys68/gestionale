@@ -1,13 +1,13 @@
-// FORZATO IL BUMP A V8 PER FORZARE L'AGGIORNAMENTO DELLA CACHE CON IL BLINDAGGIO INDEX
-const CACHE_NAME = 'gestionale-cache-v8-titanium'; 
+// FORZATO IL BUMP A V9 PER FORZARE L'AGGIORNAMENTO DELLA CACHE CON LIBRERIE LOCALI
+const CACHE_NAME = 'gestionale-cache-v9-titanium'; 
 const urlsToCache = [
   './',
-  './index.html', // RISOLUZIONE BUG ANDROID: Garantisce l'avvio offline se richiamato esplicitamente
+  './index.html',
   './manifest.json',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js'
+  './bootstrap.min.css',
+  './bootstrap.bundle.min.js',
+  './jspdf.umd.min.js',
+  './jspdf.plugin.autotable.min.js'
 ];
 
 self.addEventListener('install', event => {
