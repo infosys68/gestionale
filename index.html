@@ -14,10 +14,11 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     <link class="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M2 22h20v-2H2v2zm10-18.73L2.83 8H21.1L12 3.27zM4 18h3v-7H4v7zm5 0h3v-7H9v7zm5 0h3v-7h-3v7zm5 0h3v-7h-3v7z'/></svg>">
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- LIBRERIE IN LOCALE: CHIUSURA FALLA SUPPLY CHAIN -->
+    <link href="./bootstrap.min.css" rel="stylesheet">
+    <script src="./bootstrap.bundle.min.js"></script>
+    <script src="./jspdf.umd.min.js"></script>
+    <script src="./jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root { color-scheme: dark; --bg-main: #090d16; --bg-card: #111827; --bg-input: #1f2937; --border-color: rgba(255, 255, 255, 0.08); --text-main: #f3f4f6; --text-muted: #9ca3af; --accent-blue: #38bdf8; --accent-green: #10b981; --accent-red: #ef4444; --accent-orange: #f59e0b; }
@@ -63,7 +64,6 @@
             
             <div id="login-error" class="text-danger mt-3 hidden fw-bold" style="font-size: 0.85rem;">❌ PIN errato.</div>
             
-            <!-- PULSANTE IMPRONTA DIGITALE (COMPARE SOLO SE ATTIVATA) -->
             <button id="btn-biometric-login" onclick="sbloccaConImpronta()" class="btn btn-outline-info btn-lg w-100 rounded-pill fw-bold shadow mt-3 hidden">🧬 Sblocca con Impronta</button>
         </div>
     </div>
@@ -169,7 +169,6 @@
             <div id="backup-section" class="section-container hidden">
                 <h3 class="mb-4 fw-bold text-white px-2">⚙️ Dati e Sincronizzazione</h3>
                 
-                <!-- CASSEFORTE LOCALE PER CHIAVE CLOUD (NON TRACCIATA SU GITHUB) -->
                 <div class="card p-4 shadow-sm border-0 rounded-4 border border-warning mb-4">
                     <h5 class="text-warning">🔑 Chiave di Sicurezza Cloud</h5>
                     <p class="small text-muted">Inserisci la tua password contabile per autorizzare questo dispositivo specifico a connettersi a Drive.</p>
@@ -177,7 +176,6 @@
                     <button onclick="salvaTokenCloud()" class="btn btn-warning text-dark w-100 rounded-pill fw-bold">Salva Chiave</button>
                 </div>
 
-                <!-- SEZIONE BIOMETRIA (IMPRONTA) -->
                 <div id="biometric-card" class="card p-4 shadow-sm border-0 rounded-4 border border-info mb-4 hidden">
                     <h5 class="text-info">🧬 Sblocco Biometrico</h5>
                     <p class="small text-muted">Attiva l'impronta digitale del tuo Pixel per accedere al gestionale all'avvio senza digitare il PIN.</p>
@@ -231,10 +229,8 @@
         let isInspectionMode = false;
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
-        // NUOVO INDIRIZZO STATICO DELLA WEB APP DI GOOGLE (SUPER-BLINDATO)
         const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyC-BxUBrspzE0Ms6P6NM9YkRtlp8I1_h3pGZXbtNR-Ax9XZElNo_LBTZJSv1wk9QWE/exec";
         
-        // LETTURA TOKEN DALLA MEMORIA ISOLATA
         const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
 
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
@@ -303,41 +299,40 @@
             } catch (e) { console.error("Errore sanitizzazione strutturale:", e); }
         }
 
-        // Funzione helper unificata per la sincronizzazione cloud all'avvio
-async function syncCloudAndEnter() {
-    document.getElementById('login-screen').classList.add('hidden');
-    showToast("↻ Allineamento protetto cloud...");
-    try {
-        const res = await fetch(CLOUD_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
-        });
-        if (res.ok) {
-            const cloudDb = await res.json();
-            if (cloudDb && cloudDb.transazioni) {
-                const cloudTs = Number(cloudDb.timestamp) || 0;
-                const localTs = Number(db.timestamp) || 0;
-                
-                if (cloudTs > localTs) {
-                    // Il cloud è più recente -> Scarico i dati sul Pixel
-                    db = cloudDb; sanitizeDatabase();
-                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                    showToast("✔️ Scaricati ultimi dati da Drive!");
-                } else if (localTs > cloudTs) {
-                    // Il Pixel è più recente (spese fatte offline) -> Le spingo subito su Drive!
-                    showToast("🌐 Rilevate modifiche offline! Sincronizzazione in corso...");
-                    saveData();
-                } else {
-                    showToast("✔️ Dati in perfetto equilibrio.");
+        async function syncCloudAndEnter() {
+            document.getElementById('login-screen').classList.add('hidden');
+            showToast("↻ Allineamento protetto cloud...");
+            try {
+                const res = await fetch(CLOUD_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+                });
+                if (res.ok) {
+                    const cloudDb = await res.json();
+                    if (cloudDb && cloudDb.transazioni) {
+                        const cloudTs = Number(cloudDb.timestamp) || 0;
+                        const localTs = Number(db.timestamp) || 0;
+                        
+                        if (cloudTs > localTs) {
+                            db = cloudDb; sanitizeDatabase();
+                            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                            showToast("✔️ Scaricati ultimi dati da Drive!");
+                        } else if (localTs > cloudTs) {
+                            showToast("🌐 Rilevate modifiche offline! Sincronizzazione in corso...");
+                            saveData();
+                        } else {
+                            showToast("✔️ Dati in perfetto equilibrio.");
+                        }
+                    }
                 }
+            } catch(e) {
+                showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
             }
+            
+            // CORREZIONE SCHERMO NERO: Inserito ritardo per l'accelerazione grafica di Android
+            setTimeout(() => { enterApp('home'); }, 400);
         }
-    } catch(e) {
-        showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
-    }
-    enterApp('home');
-}
 
         async function checkPassword() {
             const inputVal = document.getElementById('password-input').value;
@@ -420,7 +415,7 @@ async function syncCloudAndEnter() {
             noteTimeout = setTimeout(() => {
                 const c = document.getElementById('note-area').value;
                 if (db.note !== c) { db.note = c; saveData(); if (status) status.innerText = "💾 Salvato!"; setTimeout(() => { if(status) status.innerText=""; }, 1500); }
-            }, 500); // OTTIMIZZAZIONE 500ms
+            }, 500); 
         }
 
         function updateDashboard() {
@@ -953,7 +948,6 @@ async function syncCloudAndEnter() {
             if (input) { input.value = localStorage.getItem('gestionale_cloud_token') || ''; }
         }
 
-        // --- MOTORE BIOMETRICO (WEBAUTHN LOCAL-ONLY PIXEL) ---
         document.addEventListener("DOMContentLoaded", async () => {
             if (window.PublicKeyCredential && !isServerMode) {
                 document.getElementById('biometric-card')?.classList.remove('hidden');
@@ -1016,14 +1010,13 @@ async function syncCloudAndEnter() {
                     const localData = localStorage.getItem('gestionale_db_pixel'); 
                     if (localData) { try { db = JSON.parse(localData); } catch(e) {} }
                     sanitizeDatabase();
-                    await syncCloudAndEnter(); // Uso la nuova funzione helper ottimizzata
+                    await syncCloudAndEnter(); 
                 }
             } catch (e) {
                 console.log("Sblocco biometrico non riuscito o annullato.");
             }
         }
 
-        // --- SENSORE DI RETE AUTONOMO PER LA SINCRONIZZAZIONE (OFFLINE TO ONLINE) ---
         window.addEventListener('online', function() { 
             if (dataChanged && !isServerMode) { 
                 showToast("🌐 Rete tornata! Sincronizzazione in coda..."); 
