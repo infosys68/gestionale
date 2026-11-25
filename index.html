@@ -249,9 +249,10 @@
         // NUOVO INDIRIZZO STATICO DELLA WEB APP DI GOOGLE (SUPER-BLINDATO)
         const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyC-BxUBrspzE0Ms6P6NM9YkRtlp8I1_h3pGZXbtNR-Ax9XZElNo_LBTZJSv1wk9QWE/exec";
         
-        // LETTURA TOKEN DALLA MEMORIA ISOLATA
-        const CLOUD_TOKEN = localStorage.getItem('gestionale_cloud_token') || '';
+        // LETTURA DINAMICA TOKEN DALLA MEMORIA ISOLATA
+        function getCloudToken() { return localStorage.getItem('gestionale_cloud_token') || ''; }
 
+        function round2(n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
         function generateSecureId() { return Date.now() + "-" + Math.floor(Math.random() * 1000000).toString(16); }
         function getLocalDateString() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; }
         function getTimestampString() { const now = new Date(); return String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + " ore " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0'); }
@@ -271,7 +272,8 @@
         function cleanNumeric(val) {
             if (val === undefined || val === null || val === '') return 0;
             let cleanStr = String(val).replace(/[^0-9.,-]/g, '').replace(',', '.');
-            return parseFloat(cleanStr) || 0;
+            const parsed = parseFloat(cleanStr) || 0;
+            return round2(parsed);
         }
 
         function showToast(message) { 
@@ -332,7 +334,7 @@
                 const res = await fetch(CLOUD_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+                    body: JSON.stringify({ token: getCloudToken(), action: "read" })
                 });
                 if (res.ok) {
                     const cloudDb = await res.json();
@@ -412,7 +414,7 @@
                 fetch(CLOUD_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "write", data: db })
+                    body: JSON.stringify({ token: getCloudToken(), action: "write", data: db })
                 }).then(res => res.json()).then(resData => {
                     if (resData && resData.status === "ok") {
                         dataChanged = false; updateExitButton();
@@ -456,12 +458,16 @@
                         if (t.tipo === 'entrata') saldo += imp; else saldo -= imp;
                         if (t.data <= localToday) { if (t.tipo === 'entrata') saldoContabile += imp; else saldoContabile -= imp; }
                     } else if (t.sezione === 'carta') {
-                        if (t.tipo === 'uscita' && parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) totaleCartaMese += imp;
-                        if (!t.confermato) { if (t.tipo === 'uscita' && !t.confermato) saldo -= imp; else saldo += imp; }
+                        if (parseInt(parts[1]) === (oggi.getMonth() + 1) && parseInt(parts[0]) === oggi.getFullYear()) {
+                            totaleCartaMese += (t.tipo === 'uscita' ? imp : -imp);
+                        }
+                        if (!t.confermato) { if (t.tipo === 'uscita') saldo -= imp; else saldo += imp; }
                     }
                 }
             });
-            saldo -= (db.fondi.personale + db.fondi.risparmi);
+            saldo = round2(saldo - (db.fondi.personale + db.fondi.risparmi));
+            saldoContabile = round2(saldoContabile);
+            totaleCartaMese = round2(totaleCartaMese);
             if (saldo < 0) { document.getElementById('main-card-saldo').style.background = 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)'; } else { document.getElementById('main-card-saldo').style.background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'; }
             document.getElementById('saldo-totale').innerText = `€ ${saldo.toFixed(2)}`; document.getElementById('saldo-contabile').innerText = `€ ${saldoContabile.toFixed(2)}`;
             document.getElementById('dash-carta-mese').innerText = `€ ${totaleCartaMese.toFixed(2)}`;
@@ -535,6 +541,7 @@
                     }
                 }
             });
+            nuovoTotale = round2(nuovoTotale);
 
             const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
             const causaleDaCercare = "Saldo Carta mese di " + nomiMesi[mese];
@@ -555,14 +562,14 @@
 
         function addTransaction(e) {
             e.preventDefault(); if (isInspectionMode) return; if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
-            const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = parseFloat(document.getElementById('trans-importo').value); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
+            const id = document.getElementById('trans-id').value; const dataInput = document.getElementById('trans-data').value; const causaleInput = document.getElementById('trans-causale').value; const importoInput = round2(parseFloat(document.getElementById('trans-importo').value)); const tipoInput = document.getElementById('trans-tipo').value; const categoryInput = document.getElementById('trans-categoria').value;
             if (isNaN(importoInput) || importoInput <= 0) return;
             
             let vecchia = id ? db.transazioni.find(x => x.id === id) : null;
             if (vecchia && vecchia.isFondoTransfer) {
                 const f = vecchia.targetFondo || (vecchia.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
-                if (vecchia.tipo === 'entrata') db.fondi[f] += vecchia.importo; if (vecchia.tipo === 'uscita') db.fondi[f] -= vecchia.importo;
-                if (tipoInput === 'entrata') db.fondi[f] -= importoInput; if (tipoInput === 'uscita') db.fondi[f] += importoInput;
+                if (vecchia.tipo === 'entrata') db.fondi[f] = round2(db.fondi[f] + vecchia.importo); if (vecchia.tipo === 'uscita') db.fondi[f] = round2(db.fondi[f] - vecchia.importo);
+                if (tipoInput === 'entrata') db.fondi[f] = round2(db.fondi[f] - importoInput); if (tipoInput === 'uscita') db.fondi[f] = round2(db.fondi[f] + importoInput);
             }
             const t = { id: id || generateSecureId(), sezione: vecchia ? vecchia.sezione : activeSection, tipo: tipoInput, data: dataInput, causale: causaleInput, categoria: categoryInput, importo: importoInput, confermato: vecchia ? vecchia.confermato : false, isFondoTransfer: vecchia ? vecchia.isFondoTransfer : false, targetFondo: vecchia ? vecchia.targetFondo : null };
             if (id) { db.transazioni[db.transazioni.findIndex(x => x.id === id)] = t; } else { db.transazioni.push(t); }
@@ -621,7 +628,7 @@
                         if (res.ok) {
                             const archivioEsterno = await res.json();
                             if (Array.isArray(archivioEsterno)) {
-                                archivioEsterno.forEach(x => { x.importo = cleanNumeric(x.importo); });
+                                archivioEsterno.forEach(x => { x.importo = cleanNumeric(x.importo); x.isFondoTransfer = !!x.isFondoTransfer; });
                                 dati = archivioEsterno.filter(t => t && t.sezione === activeSection);
                             }
                         }
@@ -650,9 +657,9 @@
             const boxTotale = document.getElementById('totale-archivio-box');
             if (boxTotale) {
                 if (mode === 'archivio') {
-                    const totArchivio = activeSection === 'carta'
+                    const totArchivio = round2(activeSection === 'carta'
                         ? dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? t.importo : -t.importo), 0)
-                        : dati.reduce((sum, t) => sum + (t.tipo === 'entrata' ? t.importo : -t.importo), 0);
+                        : dati.reduce((sum, t) => t.isFondoTransfer ? sum : sum + (t.tipo === 'entrata' ? t.importo : -t.importo), 0));
                     const lblTotale = document.getElementById('totale-archivio-label');
                     if (lblTotale) lblTotale.innerText = isAllMonths ? 'Totale Anno' : 'Totale Mese';
                     boxTotale.classList.remove('hidden');
@@ -708,7 +715,27 @@
             renderTable(activeViewMode); 
         }
 
-        function post(id) { if(isInspectionMode) return; const x = db.transazioni.find(x => x.id === id); let p = x.data.split('-'); let d = new Date(p[0], p[1]-1, p[2]); let giornoOriginale = d.getDate(); d.setMonth(d.getMonth() + 1); if (d.getDate() !== giornoOriginale) d.setDate(0); x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); x.confermato = false; saveData(); renderTable(activeViewMode); showToast("Spesa posticipata di un mese"); }
+        function post(id) {
+            if (isInspectionMode) return;
+            const x = db.transazioni.find(x => x.id === id);
+            if (!x || !x.data) return;
+            const eraConfermato = !!x.confermato;
+            const p = x.data.split('-');
+            const oldAnno = parseInt(p[0]);
+            const oldMese = parseInt(p[1]);
+            let d = new Date(oldAnno, oldMese - 1, parseInt(p[2]));
+            let giornoOriginale = d.getDate();
+            d.setMonth(d.getMonth() + 1);
+            if (d.getDate() !== giornoOriginale) d.setDate(0);
+            x.data = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+            x.confermato = false;
+            if (x.sezione === 'carta' && eraConfermato && p.length === 3) {
+                ricalcolaAddebitoCarta(oldAnno, oldMese);
+            }
+            saveData();
+            renderTable(activeViewMode);
+            showToast("Spesa posticipata di un mese");
+        }
         
         function delT(id) {
             if (isInspectionMode) return;
@@ -716,7 +743,7 @@
                 const t = db.transazioni.find(x => x.id === id);
                 if (t && t.isFondoTransfer) {
                     const f = t.targetFondo || (t.causale.toLowerCase().includes('personale') ? 'personale' : 'risparmi');
-                    if (t.tipo === 'entrata') db.fondi[f] += t.importo; if (t.tipo === 'uscita') db.fondi[f] -= t.importo;
+                    if (t.tipo === 'entrata') db.fondi[f] = round2(db.fondi[f] + t.importo); if (t.tipo === 'uscita') db.fondi[f] = round2(db.fondi[f] - t.importo);
                 }
                 let ricalcolaMese = null; let ricalcolaAnno = null;
                 if (t && t.sezione === 'carta' && t.confermato && t.data) {
@@ -744,7 +771,7 @@
         
         function addRicorrente(e) { 
             e.preventDefault(); if(isInspectionMode) return; if (isSubmitting) return; isSubmitting = true; setTimeout(() => isSubmitting = false, 500);
-            const id = document.getElementById('ric-id').value; const imp = parseFloat(document.getElementById('ric-importo').value); if (isNaN(imp) || imp <= 0) return; 
+            const id = document.getElementById('ric-id').value; const imp = round2(parseFloat(document.getElementById('ric-importo').value)); if (isNaN(imp) || imp <= 0) return; 
             const r = { id: id || generateSecureId(), tipo: document.getElementById('ric-tipo').value, mese: document.getElementById('ric-mese').value, giorno: parseInt(document.getElementById('ric-giorno').value), causale: document.getElementById('ric-causale').value, categoria: document.getElementById('ric-categoria').value, importo: imp, ultima_esecuzione: "" }; 
             if (id) { const vecchia = db.ricorrenti.find(x => x.id === id); r.ultima_esecuzione = vecchia ? vecchia.ultima_esecuzione : ""; db.ricorrenti[db.ricorrenti.findIndex(x => x.id === id)] = r; } 
             else { db.ricorrenti.push(r); }
@@ -777,7 +804,7 @@
                             data: annoAttuale + "-" + String(meseAttuale).padStart(2, '0') + "-" + String(giornoEffettivo).padStart(2, '0'),
                             causale: r.causale,
                             categoria: r.categoria || 'Altro',
-                            importo: r.importo,
+                            importo: round2(r.importo),
                             confermato: false
                         });
                         r.ultima_esecuzione = firmaAttuale;
@@ -793,7 +820,7 @@
                             data: annoProssimo + "-" + String(meseProssimo).padStart(2, '0') + "-" + String(giornoEffettivo).padStart(2, '0'),
                             causale: r.causale,
                             categoria: r.categoria || 'Altro',
-                            importo: r.importo,
+                            importo: round2(r.importo),
                             confermato: false
                         });
                         r.ultima_esecuzione = firmaProssimo;
@@ -810,13 +837,13 @@
 
         function modificaFondi(tipoFondo, action) {
             if(isInspectionMode) return;
-            const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = parseFloat(input.value); if (isNaN(val) || val <= 0) return;
+            const input = document.getElementById("fondo-" + tipoFondo + "-" + action); const val = round2(parseFloat(input.value)); if (isNaN(val) || val <= 0) return;
             const oggi = getLocalDateString();
             if (action === 'aggiungi') {
-                db.fondi[tipoFondo] += val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] = round2(db.fondi[tipoFondo] + val); db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'uscita', data: oggi, causale: "Trasferimento in Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             } else {
                 if (val > db.fondi[tipoFondo]) return showToast("Fondi insufficienti!");
-                db.fondi[tipoFondo] -= val; db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
+                db.fondi[tipoFondo] = round2(db.fondi[tipoFondo] - val); db.transazioni.push({ id: generateSecureId(), sezione: 'conto', tipo: 'entrata', data: oggi, causale: "Prelievo da Fondo " + tipoFondo, categoria: 'Risparmio', importo: val, confermato: true, isFondoTransfer: true, targetFondo: tipoFondo });
             }
             input.value = ''; saveData();
         }
@@ -845,6 +872,7 @@
                         }
                     }
                 });
+                impattoSaldoStorico = round2(impattoSaldoStorico);
 
                 const res = await fetch('/api/archive', { 
                     method: 'POST', 
@@ -860,7 +888,7 @@
                         data: (y + 1) + "-01-01",
                         causale: `Riporto Saldo Storico dopo archiviazione anno ${y}`,
                         categoria: 'Altro',
-                        importo: Math.abs(parseFloat(impattoSaldoStorico.toFixed(2))),
+                        importo: Math.abs(impattoSaldoStorico),
                         confermato: true,
                         isFondoTransfer: false,
                         targetFondo: null
@@ -955,6 +983,7 @@
                     }
                 }
             });
+            totaleDaAddebitare = round2(totaleDaAddebitare);
             
             if (totaleDaAddebitare > 0) { 
                 const nomiMesi = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
@@ -968,7 +997,7 @@
                 let rigaAddebito = db.transazioni.find(x => x && x.sezione === 'conto' && x.causale === causaleDaCercare && x.data === dataAddebito);
                 
                 if (rigaAddebito) {
-                    rigaAddebito.importo = parseFloat(totaleDaAddebitare.toFixed(2));
+                    rigaAddebito.importo = totaleDaAddebitare;
                 } else {
                     db.transazioni.push({ 
                         id: generateSecureId(), 
@@ -977,7 +1006,7 @@
                         data: dataAddebito, 
                         causale: causaleDaCercare, 
                         categoria: 'Altro', 
-                        importo: parseFloat(totaleDaAddebitare.toFixed(2)), 
+                        importo: totaleDaAddebitare, 
                         confermato: false, 
                         isFondoTransfer: false, 
                         targetFondo: null 
@@ -1043,28 +1072,25 @@
             let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = [];
             if (type === 'fondi') {
                 head = [['Nome Fondo', '', '', 'Saldo Attuale']];
-                body.push(['Fondo Personale', '', '', '€ ' + db.fondi.personale.toFixed(2)]); body.push(['Fondo Risparmi', '', '', '€ ' + db.fondi.risparmi.toFixed(2)]);
+                body.push(['Fondo Personale', '', '', '€ ' + db.fondi.personale.toFixed(2)]);
+                body.push(['Fondo Risparmi', '', '', '€ ' + db.fondi.risparmi.toFixed(2)]);
             } else if (type === 'ricorrenti') {
                 head = [['Scadenza', 'Causale', 'Categoria', 'Importo']];
-                document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if (cols.length >= 3) {
-                        const signedImp = (cols[2].classList.contains('uscita') ? '-' : '+') + cols[2].innerText.trim();
-                        body.push([cols[0].innerText.trim(), cols[1].innerText.split('\n')[0], 'Ricorrente', signedImp]);
-                    }
+                [...db.ricorrenti].reverse().forEach(r => {
+                    if (!r) return;
+                    const segno = (r.tipo === 'uscita') ? '-€' : '+€';
+                    body.push(['G.' + r.giorno, r.causale || '', r.categoria || 'Altro', segno + r.importo.toFixed(2)]);
                 });
             } else {
-                document.querySelectorAll('#transazioni-tbody tr').forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if (cols.length >= 3) {
-                        const lines = cols[1].innerText.split('\n');
-                        const signedImp = (cols[2].classList.contains('uscita') ? '-' : '+') + cols[2].innerText.trim();
-                        body.push([cols[0].innerText.trim(), lines[0] ? lines[0].trim() : '', lines[1] ? lines[1].trim() : '', signedImp]);
-                    }
+                (lastRenderedTransazioni || []).forEach(t => {
+                    if (!t) return;
+                    const segno = (t.tipo === 'uscita') ? '-€' : '+€';
+                    const statoCarta = (activeSection === 'carta') ? (t.confermato ? ' [OK]' : ' [?]') : '';
+                    body.push([formatDate(t.data) + statoCarta, t.causale || '', t.categoria || 'Altro', segno + t.importo.toFixed(2)]);
                 });
             }
             doc.text(title, 14, 20); doc.autoTable({ startY: 30, head: head, body: body, theme: 'striped', headStyles: { fillColor: [56, 189, 248] } });
-            doc.save("Report_" + type + "_" + new Date().toISOString().split('T')[0] + ".pdf");
+            doc.save("Report_" + type + "_" + getLocalDateString() + ".pdf");
         }
         
         function hashPIN(p) { let h=0; for(let i=0;i<p.length;i++) h=Math.imul(31,h)+p.charCodeAt(i)|0; return h; }
@@ -1073,12 +1099,12 @@
             const tokenInput = document.getElementById('cloud-token-input').value.trim();
             if (!tokenInput) { alert("Inserisci una chiave valida!"); return; }
             localStorage.setItem('gestionale_cloud_token', tokenInput);
-            showToast("🔑 Chiave salvata localmente sul dispositivo! Riavvio...");
-            setTimeout(() => location.reload(), 1200);
+            showToast("🔑 Chiave salvata localmente sul dispositivo! Sincronizzazione...");
+            if (!isServerMode) { syncCloudAndEnter(); }
         }
         function mostraTokenEsistente() {
             const input = document.getElementById('cloud-token-input');
-            if (input) { input.value = localStorage.getItem('gestionale_cloud_token') || ''; }
+            if (input) { input.value = getCloudToken(); }
         }
 
         // --- MOTORE BIOMETRICO (WEBAUTHN LOCAL-ONLY PIXEL) ---
@@ -1157,6 +1183,14 @@
                 showToast("🌐 Rete tornata! Sincronizzazione in coda..."); 
                 saveData(); 
             } 
+        });
+
+        // --- PROTEZIONE CHIUSURA ACCIDENTALE CON SINCRONIZZAZIONE IN CODA ---
+        window.addEventListener('beforeunload', function(e) {
+            if (dataChanged && !isServerMode && !isInspectionMode) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
         });
 
     </script>
