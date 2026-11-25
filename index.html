@@ -117,6 +117,7 @@
                     <h3 id="transazioni-title" class="fw-bold m-0 text-white">...</h3>
                     <div class="d-flex gap-2">
                         <button id="btn-conferma-tutti" onclick="confermaTutteCarte()" class="btn btn-success btn-sm rounded-pill fw-bold hidden">✔️ Confirm</button>
+                        <button onclick="exportToCSV()" class="btn btn-outline-success btn-sm rounded-pill fw-bold" style="border-color: var(--border-color);">📊 CSV</button>
                         <button onclick="exportToPDF('transazioni')" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold" style="border-color: var(--border-color);">📄 PDF</button>
                     </div>
                 </div>
@@ -127,7 +128,7 @@
                     </ul>
                     <div id="archivio-filters" class="mb-3 hidden">
                         <div class="row g-2 mb-2">
-                            <div class="col-6"><select id="filter-mese" class="form-select form-select-sm rounded-pill" onchange="renderTable('archivio')"><option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option><option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option><option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option></select></div>
+                            <div class="col-6"><select id="filter-mese" class="form-select form-select-sm rounded-pill" onchange="renderTable('archivio')"><option value="all">Tutti i mesi</option><option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option><option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option><option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option></select></div>
                             <div class="col-6"><select id="filter-anno" class="form-select form-select-sm rounded-pill" onchange="renderTable('archivio')"></select></div>
                         </div>
                         <select id="filter-categoria" class="form-select form-select-sm rounded-pill mb-2" onchange="renderTable('archivio')">
@@ -145,7 +146,7 @@
                         </select>
                         <input type="text" id="search-archivio" class="form-control form-control-sm rounded-pill" placeholder="🔍 Cerca causale..." onkeyup="renderTable('archivio')">
                         <div id="totale-archivio-box" class="mt-3 text-end hidden">
-                            <span class="badge bg-warning text-dark px-3 py-2 fs-6 rounded-pill shadow-sm">Totale Mese: <span id="totale-archivio-val">€ 0.00</span></span>
+                            <span class="badge bg-warning text-dark px-3 py-2 fs-6 rounded-pill shadow-sm"><span id="totale-archivio-label">Totale Mese</span>: <span id="totale-archivio-val">€ 0.00</span></span>
                         </div>
                     </div>
                     <div class="table-responsive"><table class="table table-sm align-middle" style="font-size: 0.85rem;"><tbody id="transazioni-tbody"></tbody></table></div>
@@ -242,6 +243,7 @@
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
         let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false; let isSubmitting = false; let noteTimeout;
         let isInspectionMode = false;
+        let lastRenderedTransazioni = [];
         const isServerMode = window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         // NUOVO INDIRIZZO STATICO DELLA WEB APP DI GOOGLE (SUPER-BLINDATO)
@@ -258,6 +260,12 @@
             if (!s || typeof s !== 'string' || !s.includes('-')) return "--/--/--"; 
             const p = s.split('-'); if (p.length !== 3) return "--/--/--";
             return p[2] + "/" + p[1] + "/" + p[0].substring(2); 
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
         
         function cleanNumeric(val) {
@@ -317,40 +325,40 @@
         }
 
         // Funzione helper unificata per la sincronizzazione cloud all'avvio
-async function syncCloudAndEnter() {
-    document.getElementById('login-screen').classList.add('hidden');
-    showToast("↻ Allineamento protetto cloud...");
-    try {
-        const res = await fetch(CLOUD_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
-        });
-        if (res.ok) {
-            const cloudDb = await res.json();
-            if (cloudDb && cloudDb.transazioni) {
-                const cloudTs = Number(cloudDb.timestamp) || 0;
-                const localTs = Number(db.timestamp) || 0;
-                
-                if (cloudTs > localTs) {
-                    // Il cloud è più recente -> Scarico i dati sul Pixel
-                    db = cloudDb; sanitizeDatabase();
-                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
-                    showToast("✔️ Scaricati ultimi dati da Drive!");
-                } else if (localTs > cloudTs) {
-                    // Il Pixel è più recente (spese fatte offline) -> Le spingo subito su Drive!
-                    showToast("🌐 Rilevate modifiche offline! Sincronizzazione in corso...");
-                    saveData();
-                } else {
-                    showToast("✔️ Dati in perfetto equilibrio.");
+        async function syncCloudAndEnter() {
+            document.getElementById('login-screen').classList.add('hidden');
+            showToast("↻ Allineamento protetto cloud...");
+            try {
+                const res = await fetch(CLOUD_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ token: CLOUD_TOKEN, action: "read" })
+                });
+                if (res.ok) {
+                    const cloudDb = await res.json();
+                    if (cloudDb && cloudDb.transazioni) {
+                        const cloudTs = Number(cloudDb.timestamp) || 0;
+                        const localTs = Number(db.timestamp) || 0;
+                        
+                        if (cloudTs > localTs) {
+                            // Il cloud è più recente -> Scarico i dati sul Pixel
+                            db = cloudDb; sanitizeDatabase();
+                            localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                            showToast("✔️ Scaricati ultimi dati da Drive!");
+                        } else if (localTs > cloudTs) {
+                            // Il Pixel è più recente (spese fatte offline) -> Le spingo subito su Drive!
+                            showToast("🌐 Rilevate modifiche offline! Sincronizzazione in corso...");
+                            saveData();
+                        } else {
+                            showToast("✔️ Dati in perfetto equilibrio.");
+                        }
+                    }
                 }
+            } catch(e) {
+                showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
             }
+            enterApp('home');
         }
-    } catch(e) {
-        showToast("⚠️ Cloud non raggiungibile. Modalità offline attiva.");
-    }
-    enterApp('home');
-}
 
         async function checkPassword() {
             const inputVal = document.getElementById('password-input').value;
@@ -571,69 +579,118 @@ async function syncCloudAndEnter() {
         }
 
         async function renderTable(mode) {
-            activeViewMode = mode; const tbody = document.getElementById('transazioni-tbody'); tbody.innerHTML = ''; const oggi = new Date(); const localToday = getLocalDateString();
+            activeViewMode = mode;
+            const tbody = document.getElementById('transazioni-tbody');
+            tbody.innerHTML = '';
+            const oggi = new Date();
+            const localToday = getLocalDateString();
+
             document.getElementById('archivio-filters').classList.toggle('hidden', mode === 'corrente');
-            
-            const btnTutti = document.getElementById('btn-conferma-tutti');
-            if (btnTutti) {
-                let datiNonConfermati = db.transazioni.filter(t => t && t.sezione === 'carta' && !t.confermato);
-                if (activeSection === 'carta' && mode === 'archivio' && datiNonConfermati.length > 0 && !isInspectionMode) { btnTutti.classList.remove('hidden'); } else { btnTutti.classList.add('hidden'); }
+
+            const tabLinks = document.querySelectorAll('#transazioni-tabs .nav-link');
+            if (tabLinks.length === 2) {
+                tabLinks[0].classList.toggle('active', mode === 'corrente');
+                tabLinks[1].classList.toggle('active', mode === 'archivio');
             }
 
-            let dati = db.transazioni.filter(t => { return t && t.sezione === activeSection; });
+            const sA = parseInt(document.getElementById('filter-anno').value);
+            const sMVal = document.getElementById('filter-mese')?.value || '01';
+            const sM = parseInt(sMVal);
+            const isAllMonths = (sMVal === 'all');
+
+            const btnTutti = document.getElementById('btn-conferma-tutti');
+            if (btnTutti) {
+                const pendentiMese = db.transazioni.some(t => {
+                    if (!t || t.sezione !== 'carta' || t.confermato || !t.data) return false;
+                    const p = t.data.split('-');
+                    return parseInt(p[0]) === sA && parseInt(p[1]) === sM;
+                });
+                const mostraBtn = (activeSection === 'carta' && mode === 'archivio' && !isAllMonths && pendentiMese && !isInspectionMode);
+                btnTutti.classList.toggle('hidden', !mostraBtn);
+            }
+
+            let dati = db.transazioni.filter(t => t && t.sezione === activeSection);
+
             if (mode === 'archivio') {
-                const sA = parseInt(document.getElementById('filter-anno').value); const sM = parseInt(document.getElementById('filter-mese').value); const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim(); const catVal = document.getElementById('filter-categoria')?.value || '';
-                
+                const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
+                const catVal = document.getElementById('filter-categoria')?.value || '';
+
                 if (isServerMode && sA < oggi.getFullYear() && !isInspectionMode) {
                     try {
                         const res = await fetch(`/api/archive_view?year=${sA}`);
                         if (res.ok) {
-                            let archivioEsterno = await res.json();
+                            const archivioEsterno = await res.json();
                             if (Array.isArray(archivioEsterno)) {
                                 archivioEsterno.forEach(x => { x.importo = cleanNumeric(x.importo); });
                                 dati = archivioEsterno.filter(t => t && t.sezione === activeSection);
                             }
                         }
-                    } catch(e) { console.error("Impossibile connettersi all'archivio freddo server", e); }
+                    } catch (e) {
+                        console.error("Impossibile connettersi all'archivio freddo server", e);
+                    }
                 }
-                dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) === sA && parseInt(parts[1]) === sM; });
+
+                dati = dati.filter(t => {
+                    if (!t || !t.data) return false;
+                    const parts = t.data.split('-');
+                    return parseInt(parts[0]) === sA && (isAllMonths || parseInt(parts[1]) === sM);
+                });
                 if (catVal) dati = dati.filter(t => (t.categoria || 'Altro') === catVal);
                 if (searchVal) dati = dati.filter(t => t.causale && t.causale.toLowerCase().includes(searchVal));
             } else {
-                dati = dati.filter(t => { if(!t || !t.data) return false; const parts = t.data.split('-'); return parseInt(parts[0]) > oggi.getFullYear() || (parseInt(parts[0]) === oggi.getFullYear() && parseInt(parts[1]) >= (oggi.getMonth() + 1)); });
-            }
-            
-            let boxTotale = document.getElementById('totale-archivio-box');
-            if (boxTotale) {
-                if (mode === 'archivio') {
-                    let totArchivio = activeSection === 'carta'
-                        ? dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? t.importo : -t.importo), 0)
-                        : dati.reduce((sum, t) => sum + (t.tipo === 'entrata' ? t.importo : -t.importo), 0);
-                    boxTotale.classList.remove('hidden'); document.getElementById('totale-archivio-val').innerText = '€ ' + totArchivio.toFixed(2);
-                } else { boxTotale.classList.add('hidden'); }
+                dati = dati.filter(t => {
+                    if (!t || !t.data) return false;
+                    const parts = t.data.split('-');
+                    const y = parseInt(parts[0]);
+                    const m = parseInt(parts[1]);
+                    return y > oggi.getFullYear() || (y === oggi.getFullYear() && m >= (oggi.getMonth() + 1));
+                });
             }
 
+            const boxTotale = document.getElementById('totale-archivio-box');
+            if (boxTotale) {
+                if (mode === 'archivio') {
+                    const totArchivio = activeSection === 'carta'
+                        ? dati.reduce((sum, t) => sum + (t.tipo === 'uscita' ? t.importo : -t.importo), 0)
+                        : dati.reduce((sum, t) => sum + (t.tipo === 'entrata' ? t.importo : -t.importo), 0);
+                    const lblTotale = document.getElementById('totale-archivio-label');
+                    if (lblTotale) lblTotale.innerText = isAllMonths ? 'Totale Anno' : 'Totale Mese';
+                    boxTotale.classList.remove('hidden');
+                    document.getElementById('totale-archivio-val').innerText = '€ ' + totArchivio.toFixed(2);
+                } else {
+                    boxTotale.classList.add('hidden');
+                }
+            }
+
+            const sortedDati = dati.sort((a, b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id)));
+            lastRenderedTransazioni = sortedDati;
+
             let htmlRighe = '';
-            dati.sort((a,b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id))).forEach(t => {
-                const isFutura = t.data > localToday; let az = ''; let st = '';
+            sortedDati.forEach(t => {
+                const isFutura = t.data > localToday;
+                let az = '';
+                let st = '';
+
                 if (activeSection === 'carta') {
-                    if (t.confermato) { st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>'; } 
-                    else { 
-                        st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>'; 
+                    if (t.confermato) {
+                        st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
+                    } else {
+                        st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>';
                         if (!isInspectionMode) {
-                            let btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
-                            az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `; 
+                            const btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
+                            az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `;
                         }
                     }
                 }
-                let tastiAzione = '';
-                if (!isInspectionMode) {
-                    tastiAzione = `<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
-                }
+
+                const tastiAzione = isInspectionMode
+                    ? ''
+                    : `<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
+
                 htmlRighe += `<tr class="${isFutura ? 'riga-futura' : ''}">
                     <td style="width:80px;"><small class="text-muted d-block">${formatDate(t.data)}</small>${st}</td>
-                    <td class="fw-bold">${t.causale}<br><small class="text-info" style="font-size:0.7rem;">${t.categoria || 'Altro'}</small></td>
-                    <td class="${t.tipo==='entrata'?'entrata':'uscita'}">€${t.importo.toFixed(2)}</td>
+                    <td class="fw-bold">${escapeHtml(t.causale)}<br><small class="text-info" style="font-size:0.7rem;">${escapeHtml(t.categoria || 'Altro')}</small></td>
+                    <td class="${t.tipo === 'entrata' ? 'entrata' : 'uscita'}">€${t.importo.toFixed(2)}</td>
                     <td class="text-end" style="width:80px;">${az}${tastiAzione}</td>
                 </tr>`;
             });
@@ -677,7 +734,7 @@ async function syncCloudAndEnter() {
             [...db.ricorrenti].reverse().forEach(r => { 
                 if (r) {
                     let tasti = isInspectionMode ? '' : `<button onclick="editRicorrente('${r.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delR('${r.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
-                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${r.causale}<br><small class="text-info" style="font-size:0.7rem;">${r.categoria || 'Altro'}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end">${tasti}</td></tr>`; 
+                    tbody.innerHTML += `<tr><td>G.${r.giorno}</td><td class="fw-bold">${escapeHtml(r.causale)}<br><small class="text-info" style="font-size:0.7rem;">${escapeHtml(r.categoria || 'Altro')}</small></td><td class="${r.tipo==='entrata'?'entrata':'uscita'}">€${r.importo.toFixed(2)}</td><td class="text-end">${tasti}</td></tr>`; 
                 }
             }); 
         }
@@ -872,6 +929,7 @@ async function syncCloudAndEnter() {
             
             const sA_el = document.getElementById('filter-anno'); 
             const sM_el = document.getElementById('filter-mese');
+            if (sM_el && sM_el.value === 'all') { showToast("⚠️ Seleziona un singolo mese per confermare le spese della carta!"); return; }
             let sA = sA_el ? parseInt(sA_el.value) : null; 
             let sM = sM_el ? parseInt(sM_el.value) : null;
             if (!sA || !sM) return;
@@ -934,6 +992,52 @@ async function syncCloudAndEnter() {
             }
         }
 
+        function exportToCSV() {
+            if (!lastRenderedTransazioni || lastRenderedTransazioni.length === 0) {
+                showToast("Nessun movimento da esportare.");
+                return;
+            }
+            const esc = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+            const formatDateCSV = (s) => {
+                if (!s || typeof s !== 'string' || !s.includes('-')) return '';
+                const p = s.split('-');
+                return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : s;
+            };
+            const isCarta = (activeSection === 'carta');
+            const header = isCarta ? ['Data', 'Tipo', 'Categoria', 'Causale', 'Importo', 'Stato'] : ['Data', 'Tipo', 'Categoria', 'Causale', 'Importo'];
+            const rows = [header.join(';')];
+            lastRenderedTransazioni.forEach(t => {
+                const segno = (t.tipo === 'uscita') ? -Math.abs(t.importo) : Math.abs(t.importo);
+                const impFormatted = segno.toFixed(2).replace('.', ',');
+                const row = [
+                    esc(formatDateCSV(t.data)),
+                    esc(t.tipo === 'entrata' ? 'Entrata' : 'Uscita'),
+                    esc(t.categoria || 'Altro'),
+                    esc(t.causale || ''),
+                    impFormatted
+                ];
+                if (isCarta) row.push(esc(t.confermato ? 'Confermato' : 'In attesa'));
+                rows.push(row.join(';'));
+            });
+            const csvContent = '\uFEFF' + rows.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            let suffix = activeViewMode;
+            if (activeViewMode === 'archivio') {
+                const sA = document.getElementById('filter-anno')?.value || '';
+                const sM = document.getElementById('filter-mese')?.value || '';
+                suffix = sA + '_' + (sM === 'all' ? 'tutto_anno' : sM);
+            }
+            a.href = url;
+            a.download = `Export_${activeSection}_${suffix}_${getLocalDateString()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast("📊 File CSV esportato!");
+        }
+
         function exportToPDF(type) { 
             const { jsPDF } = window.jspdf; const doc = new jsPDF(); let title = "REPORT GESTIONALE - " + type.toUpperCase();
             let head = [['Data', 'Causale', 'Categoria', 'Importo']]; let body = [];
@@ -944,14 +1048,18 @@ async function syncCloudAndEnter() {
                 head = [['Scadenza', 'Causale', 'Categoria', 'Importo']];
                 document.querySelectorAll('#ricorrenti-tbody tr').forEach(row => {
                     const cols = row.querySelectorAll('td');
-                    if (cols.length >= 3) { body.push([cols[0].innerText.trim(), cols[1].innerText.split('\n')[0], 'Ricorrente', cols[2].innerText.trim()]); }
+                    if (cols.length >= 3) {
+                        const signedImp = (cols[2].classList.contains('uscita') ? '-' : '+') + cols[2].innerText.trim();
+                        body.push([cols[0].innerText.trim(), cols[1].innerText.split('\n')[0], 'Ricorrente', signedImp]);
+                    }
                 });
             } else {
                 document.querySelectorAll('#transazioni-tbody tr').forEach(row => {
                     const cols = row.querySelectorAll('td');
                     if (cols.length >= 3) {
                         const lines = cols[1].innerText.split('\n');
-                        body.push([cols[0].innerText.trim(), lines[0] ? lines[0].trim() : '', lines[1] ? lines[1].trim() : '', cols[2].innerText.trim()]);
+                        const signedImp = (cols[2].classList.contains('uscita') ? '-' : '+') + cols[2].innerText.trim();
+                        body.push([cols[0].innerText.trim(), lines[0] ? lines[0].trim() : '', lines[1] ? lines[1].trim() : '', signedImp]);
                     }
                 });
             }
