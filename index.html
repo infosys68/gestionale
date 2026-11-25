@@ -91,6 +91,7 @@
         <div class="container-fluid py-2">
             <div id="dashboard-view" class="section-container">
                 <div id="main-card-saldo" class="card-saldo">
+                    <div id="app-version" class="text-start mb-2" style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.75; font-family: monospace; margin-top: -12px;"></div>
                     <div id="alert-container"></div>
                     <div style="text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); font-size: 0.75rem; font-weight: 700;">Saldo Prudenziale</div>
                     <h1 id="saldo-totale" class="valore-saldo">€ 0.00</h1>
@@ -240,6 +241,9 @@
     </div>
 
     <script>
+        // === VERSIONE COMPILAZIONE (aggiornare a ogni modifica di index.html) ===
+        const APP_VERSION = "25-11-26";
+
         let db = { transazioni: [], ricorrenti: [], fondi: { personale: 0, risparmi: 0 }, note: "", last_update: "", timestamp: 0 };
         let activeSection = 'home'; let activeViewMode = 'corrente'; let dataChanged = false; let isSubmitting = false; let noteTimeout;
         let isInspectionMode = false;
@@ -411,18 +415,20 @@
                 catch (e) { dataChanged = true; updateExitButton(); showToast("⚠️ Errore salvataggio server PC!"); }
             } else {
                 dataChanged = true; updateExitButton();
-                fetch(CLOUD_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: getCloudToken(), action: "write", data: db })
-                }).then(res => res.json()).then(resData => {
+                try {
+                    const res = await fetch(CLOUD_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ token: getCloudToken(), action: "write", data: db })
+                    });
+                    const resData = await res.json();
                     if (resData && resData.status === "ok") {
                         dataChanged = false; updateExitButton();
                         showToast("☁️ Sincronizzato su Google Drive!");
                     }
-                }).catch(() => {
+                } catch (e) {
                     showToast("⚠️ Salvato localmente. Sincronizzazione cloud in coda.");
-                });
+                }
             }
         }
 
@@ -557,6 +563,19 @@
                 } else {
                     db.transazioni = db.transazioni.filter(x => x && x.id !== rigaAddebito.id);
                 }
+            } else if (nuovoTotale > 0) {
+                db.transazioni.push({
+                    id: generateSecureId(),
+                    sezione: 'conto',
+                    tipo: 'uscita',
+                    data: dataAddebitoTarget,
+                    causale: causaleDaCercare,
+                    categoria: 'Altro',
+                    importo: nuovoTotale,
+                    confermato: false,
+                    isFondoTransfer: false,
+                    targetFondo: null
+                });
             }
         }
 
@@ -617,6 +636,7 @@
             }
 
             let dati = db.transazioni.filter(t => t && t.sezione === activeSection);
+            let isColdArchive = false;
 
             if (mode === 'archivio') {
                 const searchVal = document.getElementById('search-archivio').value.toLowerCase().trim();
@@ -628,6 +648,7 @@
                         if (res.ok) {
                             const archivioEsterno = await res.json();
                             if (Array.isArray(archivioEsterno)) {
+                                isColdArchive = true;
                                 archivioEsterno.forEach(x => { x.importo = cleanNumeric(x.importo); x.isFondoTransfer = !!x.isFondoTransfer; });
                                 dati = archivioEsterno.filter(t => t && t.sezione === activeSection);
                             }
@@ -678,19 +699,21 @@
                 let az = '';
                 let st = '';
 
+                const isReadOnlyRow = isInspectionMode || isColdArchive;
+
                 if (activeSection === 'carta') {
                     if (t.confermato) {
                         st = '<span class="badge bg-success rounded-pill" style="font-size:0.6rem;">✔️</span>';
                     } else {
                         st = '<span class="badge bg-warning text-dark rounded-pill" style="font-size:0.6rem;">❓</span>';
-                        if (!isInspectionMode) {
+                        if (!isReadOnlyRow) {
                             const btnConf = mode === 'archivio' ? `<button onclick="conf('${t.id}')" class="btn btn-sm btn-success p-1 px-2">v</button> ` : '';
                             az = `${btnConf}<button onclick="post('${t.id}')" class="btn btn-sm btn-warning p-1 px-2">></button> `;
                         }
                     }
                 }
 
-                const tastiAzione = isInspectionMode
+                const tastiAzione = isReadOnlyRow
                     ? ''
                     : `<button onclick="editTransaction('${t.id}')" class="btn btn-sm btn-link p-0 text-primary fs-5">✎</button> <button onclick="delT('${t.id}')" class="btn btn-sm btn-link p-0 text-danger fs-5 ms-2">✖</button>`;
 
@@ -897,7 +920,7 @@
                     db.transazioni = db.transazioni.filter(t => parseInt(t.data.split('-')[0]) > y); 
                     db.transazioni.push(rigaRiporto); 
                     
-                    saveData(); 
+                    await saveData(); 
                     showToast("❄️ Archiviato con successo! Creata riga di riporto saldo storico.");
                     setTimeout(() => location.reload(), 1000); 
                 } 
@@ -926,11 +949,13 @@
             const file = document.getElementById('file-import').files[0]; if (!file) return; 
             if (!confirm("⚠️ Questa azione sovrascriverà l'intero database corrente. Continuare?")) return;
             const r = new FileReader(); 
-            r.onload = e => { 
+            r.onload = async e => { 
                 try { 
                     db = JSON.parse(e.target.result); 
                     sanitizeDatabase(); isInspectionMode = false;
-                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db)); saveData(); 
+                    localStorage.setItem('gestionale_db_pixel', JSON.stringify(db));
+                    await saveData();
+                    dataChanged = false;
                     alert("📥 Database sovrascritto e ripristinato! L'app verrà ricaricata.");
                     location.reload();
                 } catch(err) { alert("File non integro o corrotto."); } 
@@ -949,7 +974,7 @@
             if (sM) sM.value = pM.toString().padStart(2, '0'); 
         }
         
-        function editTransaction(id) { if(isInspectionMode) return; const t = db.transazioni.find(x => x.id === id); document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
+        function editTransaction(id) { if(isInspectionMode) return; const t = db.transazioni.find(x => x.id === id); if(!t) return; document.getElementById('trans-id').value = t.id; document.getElementById('trans-tipo').value = t.tipo; document.getElementById('trans-data').value = t.data; document.getElementById('trans-causale').value = t.causale; document.getElementById('trans-categoria').value = t.categoria || 'Altro'; document.getElementById('trans-importo').value = t.importo; const myModal = new bootstrap.Modal(document.getElementById('modalTransazione')); myModal.show(); }
         
         function confermaTutteCarte() { 
             if(isInspectionMode) return;
@@ -1109,6 +1134,8 @@
 
         // --- MOTORE BIOMETRICO (WEBAUTHN LOCAL-ONLY PIXEL) ---
         document.addEventListener("DOMContentLoaded", async () => {
+            const verEl = document.getElementById('app-version');
+            if (verEl) verEl.innerText = 'Vers. ' + APP_VERSION;
             if (window.PublicKeyCredential && !isServerMode) {
                 document.getElementById('biometric-card')?.classList.remove('hidden');
                 if (localStorage.getItem('biometric_enabled') === 'true') {
